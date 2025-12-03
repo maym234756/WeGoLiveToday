@@ -1,3 +1,5 @@
+//apps/web/app/studio/page.tsx
+
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
@@ -19,6 +21,23 @@ type WidgetId =
   | 'alerts'
   | 'payouts'
 
+type RevenueStats = {
+  tokensCurrent: number
+  revenueCurrent: number
+  tokensToday: number
+  estUsdToday: number
+  tokens30d: number
+  totalSubscription: number
+  subscriptionRate: number
+  subscriptionProfit: number
+  CreatorSubTake: number
+  DollarPerToken: number
+  pendingPayout: number
+  balance: number
+  rtmpUrl: string
+  streamKeyMasked: string
+}
+
 const DEFAULT_ORDER: WidgetId[] = [
   'revenue',     // locked – always visible
   'goLive',
@@ -37,28 +56,27 @@ export default function StudioDashboardPage() {
   const [hidden, setHidden] = useState<WidgetId[]>([])
   const [edit, setEdit] = useState(false)
 
-// Demo metrics (wire to your API later)
-const stats = useMemo(
-  () => ({
-    tokensCurrent: 2000,  
-    revenueCurrent:600,         // <— NEW: current token balance
-    tokensToday: 780,
-    tokens30d: 5680,
-    totalSubscription: 1432,
-    subscriptionRate: 15,
-    subscriptionProfit: 19332,
-    CreatorSubTake: 10,
-    DollarPerToken: 3 *0.1,
-    estUsdToday: 23400 * 0.01,     // example: 1 token = $0.01
-    estUsd30d: 48210 * 0.01,
-    pendingPayout: 0.00,
-    balance: 600.00,
-    rtmpUrl: 'rtmp://live.wegolive.com/app',
-    streamKeyMasked: 'sk_live_************fA9Z',
-  }),
-  []
-)
-
+  // Demo metrics (wire to your API later)
+  const stats = useMemo<RevenueStats>(
+    () => ({
+      tokensCurrent: 2000,
+      revenueCurrent: 600,
+      tokensToday: 780,
+      tokens30d: 5680,
+      totalSubscription: 1432,
+      subscriptionRate: 15,
+      subscriptionProfit: 19332,
+      CreatorSubTake: 10,
+      DollarPerToken: 3 * 0.1,
+      estUsdToday: 23400 * 0.01,
+      estUsd30d: 48210 * 0.01, // not displayed, fine to keep
+      pendingPayout: 0.0,
+      balance: 600.0,
+      rtmpUrl: 'rtmp://live.wegolive.com/app',
+      streamKeyMasked: 'sk_live_************fA9Z',
+    }),
+    []
+  )
 
   // load prefs
   useEffect(() => {
@@ -205,7 +223,7 @@ const WIDGET_TITLES: Record<WidgetId, string> = {
 
 /* ---------------------------- Individual widgets ---------------------------- */
 
-function Widget({ id, stats }: { id: WidgetId; stats: any }) {
+function Widget({ id, stats }: { id: WidgetId; stats: RevenueStats }) {
   switch (id) {
     case 'revenue':
       return <RevenueWidget stats={stats} />
@@ -239,54 +257,52 @@ function RevenueWidget({ stats }: { stats: RevenueStats }) {
       <StatCardMini label="Current tokens" value={stats.tokensCurrent.toLocaleString()} />
       <StatCardMini label="Current Profit" value={`$${stats.revenueCurrent.toFixed(2)}`} />
       <StatCardMini label="Today's tokens" value={stats.tokensToday.toLocaleString()} />
-      <StatCardMini label="Todays Profit" value={`$${stats.estUsdToday.toLocaleString(2)}`}/>
+      <StatCardMini label="Todays Profit" value={`$${stats.estUsdToday.toLocaleString(2)}`} />
       <StatCardMini label="Tokens (30d)" value={stats.tokens30d.toLocaleString()} />
       <StatCardMini label="Total Subscribers" value={stats.totalSubscription.toLocaleString()} />
       <StatCardMini label="Subscription Rate" value={`$${stats.subscriptionRate.toFixed()}`} />
-      <StatCardMini label="Subscription Profit" value={`$${stats.subscriptionProfit.toLocaleString('en-US')}`}/>
+      <StatCardMini label="Subscription Profit" value={`$${stats.subscriptionProfit.toLocaleString('en-US')}`} />
       <StatCardMini label="Creator Sub Take %" value={`${stats.CreatorSubTake.toFixed()}%`} />
-      <StatCardMini label="$ Per Token" value={`$${stats.DollarPerToken.toLocaleString('en-US')}`}/>
-
+      <StatCardMini label="$ Per Token" value={`$${stats.DollarPerToken.toLocaleString('en-US')}`} />
     </div>
   )
 }
 
-
 /* --- Go Live quick panel --- */
-export function GoLiveWidget({ stats }: { stats: any }) {
+function GoLiveWidget({ stats }: { stats: RevenueStats }) {
   // form state
-  const [title, setTitle] = useState("")
-  const [category, setCategory] = useState("IRL")
-  const [bitrate, setBitrate] = useState("auto")
-  const [tagInput, setTagInput] = useState("")
+  const [title, setTitle] = useState('')
+  const [category, setCategory] = useState('IRL')
+  const [bitrate, setBitrate] = useState('auto')
+  const [tagInput, setTagInput] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [thumb, setThumb] = useState<File | null>(null)
   const [thumbUrl, setThumbUrl] = useState<string | null>(null)
 
   const [lowLatency, setLowLatency] = useState(true)
   const [recordDvr, setRecordDvr] = useState(true)
-  const [chatMode, setChatMode] = useState<"all" | "followers" | "subs">("all")
+  const [chatMode, setChatMode] = useState<'all' | 'followers' | 'subs'>('all')
 
   const [isPreviewing, setIsPreviewing] = useState(false)
 
   const bitratePresets = useMemo(
     () => [
-      { label: "Auto", value: "auto" },
-      { label: "4500 kbps (1080p30)", value: "4500" },
-      { label: "6000 kbps (1080p60)", value: "6000" },
-      { label: "3000 kbps (720p60)", value: "3000" },
+      { label: 'Auto', value: 'auto' },
+      { label: '4500 kbps (1080p30)', value: '4500' },
+      { label: '6000 kbps (1080p60)', value: '6000' },
+      { label: '3000 kbps (720p60)', value: '3000' },
     ],
     []
   )
 
   function addTagFromInput() {
     const cleaned = tagInput
-      .split(",")
+      .split(',')
       .map((t) => t.trim())
       .filter(Boolean)
     if (!cleaned.length) return
     setTags((prev) => Array.from(new Set([...prev, ...cleaned])))
-    setTagInput("")
+    setTagInput('')
   }
 
   function removeTag(t: string) {
@@ -305,18 +321,18 @@ export function GoLiveWidget({ stats }: { stats: any }) {
     // TODO: call preview API with all form state
     setTimeout(() => {
       setIsPreviewing(false)
-      alert("Preview started — wire to your ingest/encoder service.")
+      alert('Preview started — wire to your ingest/encoder service.')
     }, 600)
   }
 
   function onGoLive() {
     // TODO: call go-live endpoint with form state
-    alert("Going live… (wire to encoder/ingest transition)")
+    alert('Going live… (wire to encoder/ingest transition)')
   }
 
   function onEndStream() {
     // TODO: stop the stream
-    alert("End stream… (wire to stop endpoint)")
+    alert('End stream… (wire to stop endpoint)')
   }
 
   return (
@@ -330,17 +346,10 @@ export function GoLiveWidget({ stats }: { stats: any }) {
       </div>
 
       {/* Outer grid: left (form) + right (thumbnail/options) */}
-      <form
-        onSubmit={onSubmitPreview}
-        aria-label="Go live form"
-        className="grid gap-6 lg:grid-cols-3"
-      >
+      <form onSubmit={onSubmitPreview} aria-label="Go live form" className="grid gap-6 lg:grid-cols-3">
         {/* LEFT: Title / Category / Bitrate / Tags */}
         <div className="lg:col-span-2">
           <div className="grid gap-4 sm:grid-cols-2">
-            {/* Title */}
-
-
             {/* Category */}
             <div>
               <label htmlFor="category" className="text-sm text-zinc-300">
@@ -362,13 +371,8 @@ export function GoLiveWidget({ stats }: { stats: any }) {
               </select>
             </div>
 
-
-
             {/* Tags */}
             <div className="sm:col-span-2">
-
-
-
               <p className="mt-1 text-xs text-zinc-400">
                 Press <span className="font-medium">Enter</span> or click <span className="font-medium">Add</span> to create tags.
               </p>
@@ -377,7 +381,6 @@ export function GoLiveWidget({ stats }: { stats: any }) {
 
           {/* Actions */}
           <div className="mt-4 flex flex-wrap items-center gap-2">
-
             <button
               type="button"
               onClick={onGoLive}
@@ -395,14 +398,8 @@ export function GoLiveWidget({ stats }: { stats: any }) {
           </div>
         </div>
 
-        {/* RIGHT: Thumbnail + Stream options */}
-        <div className="grid gap-4">
-          {/* Thumbnail */}
-
-
-          {/* Options */}
-
-        </div>
+        {/* RIGHT: (thumbnail/options placeholders) */}
+        <div className="grid gap-4">{/* add your thumbnail / options here */}</div>
       </form>
     </section>
   )
@@ -555,7 +552,7 @@ function AlertsWidget() {
 }
 
 /* --- Payouts --- */
-function PayoutsWidget({ stats }: { stats: any }) {
+function PayoutsWidget({ stats }: { stats: RevenueStats }) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
