@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "dev:login": "start-server-and-test \"next dev -p 3000\" http://localhost:3000 \"start http://localhost:3000/login\"",
-    "build": "next build"
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
