@@ -1,0 +1,96 @@
+# docker-compose.yml
+name: live-platform
+
+services:
+  db:
+    image: postgres:15
+    container_name: live-platform-db-1
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-live}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-live}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # Dev API (hot reload)
+  api:
+    profiles: ["dev"]
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile.dev
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+      NOTIFY_TO: ${NOTIFY_TO}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./services/api:/app/services/api:delegated
+    working_dir: /app/services/api
+    command: ["pnpm","dev"]
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+    - TUNNEL_TOKEN=${eyJhIjoiZWYzNmNhOWFkOWFjZDNkOTBhNDY2ODVjMWMyMDFjMTgiLCJ0IjoiOTJlZjgyZDUtYTZlZi00N2YzLWI5YTEtNjU4MjdhNTEzZGYwIiwicyI6Ik56VmtOekUwWTJVdFltVXlaUzAwTVRFNExUaGxZamd0TkRWbFpqZ3lNalZtWldJeCJ9}
+    depends_on:
+      - coming-soon
+  
+
+  # Prod API (compiled)
+  api-prod:
+    profiles: ["prod"]
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile.prod
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+      NOTIFY_TO: ${NOTIFY_TO}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  coming-soon:
+    build:
+      context: services/coming-soon
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  api_node_modules:

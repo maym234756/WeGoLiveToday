@@ -1,0 +1,39 @@
+/* services/coming-soon/styles.css */
+:root { color-scheme: light dark; --bg: #0b0c10; --fg: #e5e7eb; --muted: #9ca3af; --accent: #6ee7b7; }
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: radial-gradient(1200px 800px at 50% -10%, #111827, var(--bg));
+  color: var(--fg);
+}
+.container {
+  min-height: 100%;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  place-items: center;
+  padding: 2rem;
+}
+.brand { text-align: center; margin-top: 6vh; }
+.brand h1 { font-size: clamp(2rem, 6vw, 3rem); margin: .5rem 0; letter-spacing: 0.5px; }
+.tagline { color: var(--muted); margin: 0; }
+
+.cta { margin-top: 2rem; width: 100%; max-width: 560px; }
+form { display: grid; gap: .75rem; grid-template-columns: 1fr auto; align-items: center; }
+input[type=email] {
+  width: 100%; padding: .9rem 1rem; border-radius: .75rem; border: 1px solid #374151;
+  background: rgba(255,255,255,.04); color: var(--fg); outline: none;
+}
+input[type=email]::placeholder { color: #6b7280; }
+button {
+  padding: .9rem 1.2rem; border-radius: .75rem; border: 0;
+  background: linear-gradient(135deg, var(--accent), #34d399);
+  color: #0b0c10; font-weight: 700; cursor: pointer;
+}
+button:disabled { opacity: .6; cursor: not-allowed; }
+#feedback { grid-column: 1 / -1; margin: 0; min-height: 1.25rem; color: var(--accent); }
+
+.subtle { color: var(--muted); text-align: center; margin-top: .25rem; }
+
+.footer { width: 100%; text-align: center; color: var(--muted); padding: 2rem 0; }
+.footer a { color: inherit; }

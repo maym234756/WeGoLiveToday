@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Secure Payment</title>
+
+  <!-- ✅ Load Stripe.js -->
+  <script src="https://js.stripe.com/v3/"></script>
+
+  <!-- Optional: Link to your custom styles -->
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Basic styles for demo purposes */
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      max-width: 400px;
+      margin: auto;
+    }
+
+    #payment-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    #card-element {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    #card-errors {
+      color: red;
+      font-size: 0.9em;
+    }
+
+    button {
+      background-color: #5469d4;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Enter Your Payment Details</h2>
+
+  <form id="payment-form">
+    <label for="name">Cardholder Name</label>
+    <input id="name" name="name" required placeholder="Jane Doe" />
+
+    <label for="card-element">Credit or Debit Card</label>
+    <div id="card-element">
+      <!-- A Stripe Element will be inserted here. -->
+    </div>
+
+    <!-- Used to display form errors -->
+    <div id="card-errors" role="alert"></div>
+
+    <button type="submit">Pay</button>
+  </form>
+
+  <!-- Load your JavaScript -->
+  <script src="app.js"></script>
+
+</body>
+</html>

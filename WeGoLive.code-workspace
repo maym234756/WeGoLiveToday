@@ -1,0 +1,27 @@
+{
+  "folders": [
+    {
+      "path": "live-platform"
+    }
+  ],
+  "settings": {
+    "cSpell.words": [
+  "mediantx",
+  "minioadmin",
+  "miniodata",
+  "blueminx",
+  "bluenviron",
+  "pgdata",
+  "RTMP",
+  "HLS",
+  "foobarbazword",
+  "webrtc"
+],
+
+    "cSpell.fileTypes": [
+      "yaml",
+      "yml",
+      "sh"
+    ]
+  }
+}

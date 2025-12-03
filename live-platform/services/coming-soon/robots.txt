@@ -1,0 +1,3 @@
+# services/coming-soon/robots.txt
+User-agent: *
+Allow: /

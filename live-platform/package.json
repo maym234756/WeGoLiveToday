@@ -1,0 +1,8 @@
+{
+  "name": "live-platform",
+  "private": true,
+  "workspaces": [
+    "services/*"
+  ],
+  "packageManager": "pnpm@9.12.0"
+}

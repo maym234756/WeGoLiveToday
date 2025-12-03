@@ -1,0 +1,25 @@
+FROM node:18 AS deps
+ENV PNPM_HOME=/usr/local/share/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
+
+WORKDIR /app
+COPY package.json pnpm-workspace.yaml ./
+COPY services/api/package.json services/api/package.json
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS build
+COPY services/api/tsconfig.json services/api/tsconfig.json
+COPY services/api/src services/api/src
+WORKDIR /app/services/api
+RUN pnpm build
+
+FROM node:18 AS runtime
+ENV NODE_ENV=production
+WORKDIR /app/services/api
+# minimal runtime deps (use npm to avoid workspace complexity)
+COPY services/api/package.json ./package.json
+RUN npm install --omit=dev
+COPY --from=build /app/services/api/dist ./dist
+EXPOSE 3000
+CMD ["node","dist/index.js"]

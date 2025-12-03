@@ -1,0 +1,7 @@
+**/.git
+**/.gitignore
+**/node_modules
+**/.pnpm-store
+**/.DS_Store
+**/dist
+**/.env
