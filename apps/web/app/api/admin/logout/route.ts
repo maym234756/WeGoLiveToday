@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { clearCookieHeader } from '@/lib/adminSession'
+import { setCookieHeader } from '@/lib/adminSession'
 
 export async function POST() {
   const res = NextResponse.json({ ok: true })
-  res.headers.append('Set-Cookie', clearCookieHeader())
+  res.headers.append('Set-Cookie', setCookieHeader())
   return res
 }
