@@ -1,7 +1,6 @@
 export type LiveCard = {
   title: string;
-  thumb: string;
+  thumb?: string; // ✅ optional
   host: string;
   viewers: number;
-  // Add any other fields you use
 };
