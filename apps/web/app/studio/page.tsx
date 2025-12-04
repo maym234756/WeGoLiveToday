@@ -1,9 +1,8 @@
+//apps/web/app/studio/page.tsx
+'use client'
+
 export const dynamic = 'force-dynamic';
 
-
-//apps/web/app/studio/page.tsx
-
-'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
