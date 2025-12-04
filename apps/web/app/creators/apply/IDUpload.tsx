@@ -81,7 +81,7 @@ export default function IDUpload({
           type="file"
           required={required}
           accept={accept}
-          // @ts-expect-error capture is a valid nonstandard attribute on mobile browsers
+          // @ts-ignore capture is a valid nonstandard attribute on mobile browsers
           capture={captureAttr}
           onChange={onFileChange}
           className="block w-full cursor-pointer rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-zinc-200 file:mr-3 file:rounded-md file:border-0 file:bg-zinc-800 file:px-3 file:py-2 file:text-zinc-200 hover:file:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 sm:w-auto"
