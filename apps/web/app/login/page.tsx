@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+export const dynamic = 'error'; // Throws during build if pre-render attempted
 
 import Link from 'next/link';
 import type { Metadata } from 'next';
