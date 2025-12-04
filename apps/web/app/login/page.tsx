@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 
 export const dynamic = 'error'; // Throws during build if pre-render attempted
 
