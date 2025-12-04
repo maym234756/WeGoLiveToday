@@ -257,7 +257,7 @@ function RevenueWidget({ stats }: { stats: RevenueStats }) {
       <StatCardMini label="Current tokens" value={stats.tokensCurrent.toLocaleString()} />
       <StatCardMini label="Current Profit" value={`$${stats.revenueCurrent.toFixed(2)}`} />
       <StatCardMini label="Today's tokens" value={stats.tokensToday.toLocaleString()} />
-      <StatCardMini label="Todays Profit" value={`$${stats.estUsdToday.toLocaleString(2)}`} />
+      <StatCardMini label="Todays Profit" value={`$${stats.estUsdToday.toLocaleString()}`} />
       <StatCardMini label="Tokens (30d)" value={stats.tokens30d.toLocaleString()} />
       <StatCardMini label="Total Subscribers" value={stats.totalSubscription.toLocaleString()} />
       <StatCardMini label="Subscription Rate" value={`$${stats.subscriptionRate.toFixed()}`} />
