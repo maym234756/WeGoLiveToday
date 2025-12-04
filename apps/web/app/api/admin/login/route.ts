@@ -1,3 +1,5 @@
+'use client'; // ← Add this at the top
+
 import { NextResponse } from 'next/server'
 import { createToken, setCookieHeader } from '@/lib/adminSession'
 

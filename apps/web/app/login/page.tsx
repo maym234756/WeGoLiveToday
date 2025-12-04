@@ -1,3 +1,5 @@
+'use client'; // ← Add this at the top
+
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import LoginForm from '@/components/LoginForm';
