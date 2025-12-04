@@ -17,10 +17,13 @@ import { countries } from '../lib/countries'
 export default function PaymentModal({
   bundle,
   onClose,
+  open, // ✅ leave as is
 }: {
-  bundle: Bundle
-  onClose: () => void
-}) {
+  bundle: Bundle;
+  onClose: () => void;
+  open: boolean; // ✅ explicitly type it here
+})
+ {
   const stripe = useStripe()
   const elements = useElements()
 
