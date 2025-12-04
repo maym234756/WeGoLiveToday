@@ -14,9 +14,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 // Service role client (server-only)
 const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!  // new env var
 );
+
 
 export async function POST(req: Request) {
   const sig = headers().get('stripe-signature');
