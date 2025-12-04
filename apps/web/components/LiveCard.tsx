@@ -1,6 +1,6 @@
 'use client';
 
-import type { LiveCard } from '@/app/adult/page';
+import type { LiveCard } from '@/types/live'; // ✅ correct import
 
 export default function LiveCardComponent({ stream }: { stream: LiveCard }) {
   return (
@@ -20,7 +20,7 @@ export default function LiveCardComponent({ stream }: { stream: LiveCard }) {
             LIVE
           </span>
         </div>
-        <p className="text-sm text-zinc-400 mt-1">by {stream.host}</p>
+        <p className="text-sm text-zinc-400 mt-1">{stream.host}</p>
         <p className="text-sm text-zinc-500">{stream.viewers.toLocaleString()} watching</p>
       </div>
     </div>
