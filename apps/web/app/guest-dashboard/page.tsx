@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+
+
 // apps/web/app/guest-dashboard/page.tsx
 'use client';
 
