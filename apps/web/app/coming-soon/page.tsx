@@ -5,12 +5,32 @@ import { useState } from 'react';
 export default function ComingSoon() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // 🔐 Hook this up to your backend or a service like Resend, Formspree, or Mailchimp
-    setSubmitted(true);
-    setEmail('');
+    setError(false);
+
+    try {
+      const res = await fetch('https://formspree.io/f/xdkqdzpb', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (res.ok) {
+        setSubmitted(true);
+        setEmail('');
+      } else {
+        throw new Error('Failed to submit');
+      }
+    } catch (err) {
+      console.error(err);
+      setError(true);
+    }
   };
 
   return (
@@ -21,17 +41,11 @@ export default function ComingSoon() {
         </h1>
 
         <p className="text-zinc-400 text-lg mb-6">
-          We’re building the future of live entertainment. Join us on the journey — early access, behind-the-scenes, and more.
+          We’re building the future of live entertainment. Join us on the journey — early access,
+          behind-the-scenes, and more.
         </p>
 
-        {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-          <a
-            href="/coming-soon"
-            className="inline-block rounded bg-emerald-500 px-6 py-2 text-white hover:bg-emerald-600 transition"
-          >
-          </a>
-
           <a
             href="#notify"
             className="inline-block rounded border border-zinc-700 px-6 py-2 text-zinc-300 hover:bg-zinc-800 transition"
@@ -40,7 +54,6 @@ export default function ComingSoon() {
           </a>
         </div>
 
-        {/* Email Notify Signup */}
         <form
           onSubmit={handleSubmit}
           className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6"
@@ -64,6 +77,12 @@ export default function ComingSoon() {
         {submitted && (
           <p className="text-sm text-emerald-400 mb-4">
             You’ll be the first to know when we launch!
+          </p>
+        )}
+
+        {error && (
+          <p className="text-sm text-red-400 mb-4">
+            Something went wrong. Please try again.
           </p>
         )}
 
