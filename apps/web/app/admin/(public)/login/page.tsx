@@ -1,4 +1,8 @@
 // apps/web/app/admin/(public)/login/page.tsx
+'use client';
+
+export const dynamic = 'error'; // Throws during build if pre-render attempted
+
 import type { Metadata } from 'next';
 import LoginCard from './LoginCard';
 import Link from 'next/link';

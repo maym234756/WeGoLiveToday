@@ -1,4 +1,7 @@
 
+// apps/web/app/dashboard/page.tsx
+'use client';
+
 export const dynamic = 'error'; // Throws during build if pre-render attempted
 
 import Link from 'next/link';
