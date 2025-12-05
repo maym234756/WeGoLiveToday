@@ -120,14 +120,14 @@ export default function UserDashboardPage() {
 
           <div className="flex items-center gap-2">
             <TokenBadge />
-            <AdultContentToggle />
+            {/* <AdultContentToggle /> */}
 
-            <Link
-              href="/creators/apply"
-              className="btn btn-ghost border border-zinc-800 bg-zinc-900 hover:bg-zinc-800/70"
-            >
-              Become a Streamer
-            </Link>
+            {/*
+          <Link className="btn btn-ghost border">  
+            Become a Streamer
+          </Link>
+          */}
+
 
             <Link href="/tokens" className="btn btn-primary">
               Purchase Tokens
@@ -141,8 +141,7 @@ export default function UserDashboardPage() {
         {/* Pro Feature Notice */}
         {!isPro ? (
           <div className="mt-6 p-4 border border-yellow-600 rounded bg-yellow-900/30 text-yellow-300">
-            Some features are locked. Upgrade to unlock better video quality, unlimited texting,
-            colored names, profile banners, and more.
+
           </div>
         ) : (
           <div className="mt-6 p-4 border border-emerald-500 rounded bg-emerald-900/20 text-emerald-200">
@@ -165,25 +164,6 @@ export default function UserDashboardPage() {
             </div>
           </section>
         )}
-
-        {/* 🧪 Mock Live Stream Card */}
-        <section className="mt-8">
-          <h2 className="text-xl font-semibold text-white mb-4">Featured Live</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link
-              href="/live/demo"
-              className="group relative rounded overflow-hidden border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 transition-all"
-            >
-              <div className="aspect-video bg-black flex items-center justify-center text-zinc-400 text-sm">
-                🔴 LIVE - Creator_Miles
-              </div>
-              <div className="p-3 text-white">
-                <h3 className="font-semibold text-base">Late Night Chat & Chill</h3>
-                <p className="text-xs text-zinc-400">Streaming Now • 120 viewers</p>
-              </div>
-            </Link>
-          </div>
-        </section>
 
         {/* Chat Component (Pro unlockable) */}
         <ChatInput isPro={isPro} />

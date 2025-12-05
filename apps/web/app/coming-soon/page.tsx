@@ -49,8 +49,8 @@ export default function ComingSoon() {
         </h1>
 
         <p className="text-zinc-400 text-lg mb-6">
-          We’re building the future of live entertainment. Join us on the journey — early access,
-          behind-the-scenes, and more.
+          We’re building the future of live streaming — a community where creators earn on their own terms and viewers are part of every moment. 
+          Whether you're here to stream or support, WeGoLiveToday is your stage.
         </p>
 
         {/* CTA Buttons */}
