@@ -1,18 +1,19 @@
 // apps/web/app/guest-dashboard/page.tsx
 'use client';
 
-export const dynamic = 'force-dynamic'; // Forces dynamic rendering, avoids prerender errors
-
+export const dynamic = 'force-dynamic'; // Forces dynamic rendering to avoid prerendering errors
 
 import Link from 'next/link';
+import { Suspense } from 'react';
 import DashboardBrowse from '@/components/dashboard/Browse';
 import TokenBadge from '@/components/TokenBadge';
 import AdultContentToggle from '@/components/AdultContent';
 
-export default function GuestDashboard() {
+function GuestDashboardContent() {
   return (
     <main className="px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
+        {/* Header Section */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-white">
@@ -35,10 +36,19 @@ export default function GuestDashboard() {
           </div>
         </div>
 
+        {/* Stream Browser */}
         <section className="mt-6">
           <DashboardBrowse initialStreams={[]} />
         </section>
       </div>
     </main>
+  );
+}
+
+export default function GuestDashboard() {
+  return (
+    <Suspense fallback={<div className="p-4 text-white">Loading guest dashboard...</div>}>
+      <GuestDashboardContent />
+    </Suspense>
   );
 }

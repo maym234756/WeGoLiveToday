@@ -1,20 +1,17 @@
 // apps/web/app/dashboard/page.tsx
 'use client';
 
-export const dynamic = 'force-dynamic'; // Forces dynamic rendering, avoids prerender errors
-
+export const dynamic = 'force-dynamic'; // Forces dynamic rendering to avoid SSR/pre-rendering issues
 
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import DashboardBrowse from '@/components/dashboard/Browse';
 import TokenBadge from '@/components/TokenBadge';
 import AdultContentToggle from '@/components/AdultContent';
-
-
 
 export type LiveCard = {
   id: string;
@@ -25,7 +22,8 @@ export type LiveCard = {
   thumb?: string;
 };
 
-export default function DashboardPage() {
+// Separate component that uses useSearchParams
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -82,5 +80,14 @@ export default function DashboardPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+// Wrap in Suspense to satisfy Next.js 14 CSR constraints
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-white">Loading dashboard...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }

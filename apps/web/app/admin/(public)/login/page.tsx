@@ -1,14 +1,13 @@
 // apps/web/app/admin/(public)/login/page.tsx
 'use client';
 
-export const dynamic = 'force-dynamic'; // Forces dynamic rendering, avoids prerender errors
+export const dynamic = 'force-dynamic'; // Forces dynamic rendering to avoid prerender errors
 
-import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import LoginCard from './LoginCard';
 import Link from 'next/link';
 
-
-export default function AdminLoginPage() {
+function AdminLoginContent() {
   return (
     <main className="min-h-[calc(100vh-0px)] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
@@ -21,5 +20,13 @@ export default function AdminLoginPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-white">Loading admin login...</div>}>
+      <AdminLoginContent />
+    </Suspense>
   );
 }
