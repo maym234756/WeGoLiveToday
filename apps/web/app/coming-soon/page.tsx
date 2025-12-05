@@ -18,7 +18,7 @@ export default function ComingSoon() {
 
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
           <a
-            href="/login"
+            href="/coming-soon"
             className="rounded bg-emerald-500 px-6 py-2 text-white font-medium hover:bg-emerald-600 transition"
           >
           </a>
