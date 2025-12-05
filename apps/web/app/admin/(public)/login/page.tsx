@@ -7,10 +7,6 @@ import type { Metadata } from 'next';
 import LoginCard from './LoginCard';
 import Link from 'next/link';
 
-export const metadata: Metadata = {
-  title: 'Admin sign-in · WeGoLive',
-  description: 'Restricted administrator access for WeGoLive.',
-};
 
 export default function AdminLoginPage() {
   return (
