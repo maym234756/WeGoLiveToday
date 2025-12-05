@@ -5,7 +5,7 @@ export default function ComingSoon() {
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-zinc-900 to-black text-white text-center px-4">
       <div className="max-w-xl">
         <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-tight">
-          🚧 WeGoLive is Coming Soon
+          🚧 WeGoLiveToday is Coming Soon
         </h1>
 
         <p className="text-zinc-400 text-lg mb-6">
@@ -21,7 +21,6 @@ export default function ComingSoon() {
             href="/login"
             className="rounded bg-emerald-500 px-6 py-2 text-white font-medium hover:bg-emerald-600 transition"
           >
-            Admin Login
           </a>
 
           <a
@@ -32,7 +31,7 @@ export default function ComingSoon() {
           </a>
         </div>
 
-        <p className="text-xs text-zinc-600 mt-10">© {new Date().getFullYear()} WeGoLive. All rights reserved.</p>
+        <p className="text-xs text-zinc-600 mt-10">© {new Date().getFullYear()} WeGoLiveToday. All rights reserved.</p>
       </div>
     </main>
   );
