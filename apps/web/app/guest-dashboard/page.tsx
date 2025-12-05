@@ -1,7 +1,7 @@
 // apps/web/app/guest-dashboard/page.tsx
 'use client';
 
-export const dynamic = 'error'; // Throws during build if pre-render attempted
+export const dynamic = 'force-dynamic'; // Forces dynamic rendering, avoids prerender errors
 
 
 import Link from 'next/link';
