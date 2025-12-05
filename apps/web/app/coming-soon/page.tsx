@@ -1,37 +1,75 @@
-// apps/web/app/coming-soon/page.tsx
+'use client';
+
+import { useState } from 'react';
 
 export default function ComingSoon() {
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // 🔐 Hook this up to your backend or a service like Resend, Formspree, or Mailchimp
+    setSubmitted(true);
+    setEmail('');
+  };
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-zinc-900 to-black text-white text-center px-4">
-      <div className="max-w-xl">
-        <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-tight">
-          🚧 WeGoLiveToday is Coming Soon
+      <div className="max-w-xl w-full">
+        <h1 className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
+          🚀 <span className="text-emerald-400">WeGoLiveToday</span> is Launching in 2026!
         </h1>
 
         <p className="text-zinc-400 text-lg mb-6">
-          We’re building the future of live streaming — launching in <span className="text-emerald-400 font-semibold">2026</span>!
+          We’re building the future of live entertainment. Join us on the journey — early access, behind-the-scenes, and more.
         </p>
 
-        <p className="text-zinc-500 text-sm mb-10">
-          Follow us for updates and sneak peeks into what’s coming.
-        </p>
-
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
           <a
             href="/coming-soon"
-            className="rounded bg-emerald-500 px-6 py-2 text-white font-medium hover:bg-emerald-600 transition"
+            className="inline-block rounded bg-emerald-500 px-6 py-2 text-white hover:bg-emerald-600 transition"
           >
           </a>
 
           <a
-            href="mailto:teamwegolivetoday@yahoo.com"
-            className="rounded border border-zinc-700 px-6 py-2 text-zinc-300 hover:border-emerald-500 hover:text-white transition"
+            href="#notify"
+            className="inline-block rounded border border-zinc-700 px-6 py-2 text-zinc-300 hover:bg-zinc-800 transition"
           >
-            Contact Us
+            Learn More
           </a>
         </div>
 
-        <p className="text-xs text-zinc-600 mt-10">© {new Date().getFullYear()} WeGoLiveToday. All rights reserved.</p>
+        {/* Email Notify Signup */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6"
+        >
+          <input
+            type="email"
+            placeholder="Enter your email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full sm:w-auto px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+          <button
+            type="submit"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-md transition"
+          >
+            {submitted ? '✓ Subscribed' : 'Notify Me'}
+          </button>
+        </form>
+
+        {submitted && (
+          <p className="text-sm text-emerald-400 mb-4">
+            You’ll be the first to know when we launch!
+          </p>
+        )}
+
+        <p className="text-sm text-zinc-600">
+          &copy; {new Date().getFullYear()} WeGoLiveToday Inc. All rights reserved.
+        </p>
       </div>
     </main>
   );
