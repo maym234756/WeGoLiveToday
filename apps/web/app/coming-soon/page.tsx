@@ -45,7 +45,7 @@ export default function ComingSoon() {
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-zinc-900 to-black text-white text-center px-4">
       <div className="max-w-xl w-full">
         <h1 className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
-          🚀 <span className="text-emerald-400">WeGoLiveToday</span> is Launching in 2026!
+           <span className="text-emerald-400">WeGoLiveToday</span> is Launching in 2026!
         </h1>
 
         <p className="text-zinc-400 text-lg mb-6">
