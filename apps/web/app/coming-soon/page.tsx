@@ -122,7 +122,7 @@ export default function ComingSoon() {
           />
 
           <textarea
-            placeholder="Have an idea? Drop it here (optional)"
+            placeholder="Comment Here (optional)"
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
             rows={4}
