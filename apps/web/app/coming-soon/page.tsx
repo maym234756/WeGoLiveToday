@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import TrackView from '@/components/Trackview';
+import Trackview from '@/components/Trackview';
 
 export default function ComingSoon() {
   const router = useRouter();
