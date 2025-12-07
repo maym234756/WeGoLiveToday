@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import TrackView from '@/components/TrackView';
-
+import TrackView from '@/components/TrackView'; // Still assumes this file exists
 
 export default function ComingSoon() {
   const router = useRouter();
@@ -15,8 +14,8 @@ export default function ComingSoon() {
   const [showAdminButton, setShowAdminButton] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Show admin button if correct email is typed
   useEffect(() => {
     if (email === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
       setShowAdminButton(true);
@@ -28,35 +27,29 @@ export default function ComingSoon() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(false);
+    setLoading(true);
 
     try {
-      // 1. Get general location (country)
       const geoRes = await fetch('https://ipapi.co/json/');
       const geoData = await geoRes.json();
       const country = geoData?.country_name || 'Unknown';
-
-      // 2. Log to Supabase
-      const userAgent = window.navigator.userAgent;
-      const page = '/coming-soon';
 
       await fetch('/api/viewer-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          page,
-          user_agent: userAgent,
+          page: '/coming-soon',
+          user_agent: window.navigator.userAgent,
           type: 'form_submission',
           location: country,
         }),
       });
 
-      // 3. Redirect to admin if email matches password
       if (email === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
         router.push('/admin/(protected)/page');
         return;
       }
 
-      // 4. Send form data to Formspree
       const res = await fetch('https://formspree.io/f/xdkqdzpb', {
         method: 'POST',
         headers: {
@@ -78,12 +71,14 @@ export default function ComingSoon() {
     } catch (err) {
       console.error(err);
       setError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-zinc-900 to-black text-white text-center px-4">
-      <div className="max-w-xl w-full">
+      <div className="max-w-xl w-full animate-fade-in">
         <h1 className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
           <span className="text-emerald-400">WeGoLiveToday</span> is Launching in 2026!
         </h1>
@@ -104,6 +99,7 @@ export default function ComingSoon() {
         <form
           onSubmit={handleSubmit}
           className="flex flex-col items-center justify-center gap-3 mb-6"
+          aria-label="Notify Form"
         >
           <input
             type="text"
@@ -135,9 +131,10 @@ export default function ComingSoon() {
 
           <button
             type="submit"
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-md transition w-full sm:w-auto"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-md transition w-full sm:w-auto disabled:opacity-50"
+            disabled={loading}
           >
-            {submitted ? '✓ Submitted!' : 'Notify Me'}
+            {loading ? 'Submitting...' : submitted ? '✓ Submitted!' : 'Notify Me - New Updates'}
           </button>
         </form>
 
@@ -151,7 +148,7 @@ export default function ComingSoon() {
         )}
 
         {submitted && (
-          <p className="text-sm text-emerald-400 mb-4">
+          <p className="text-sm text-emerald-400 mb-4 animate-pulse">
             Thanks for joining the waitlist! We'll keep you posted.
           </p>
         )}
@@ -168,5 +165,3 @@ export default function ComingSoon() {
     </main>
   );
 }
-
-
