@@ -18,7 +18,7 @@ export default function ComingSoon() {
 
     // Check for admin bypass
     if (email === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-      router.push('/admin');
+      router.push('/admin/(protected)/');
       return;
     }
 
