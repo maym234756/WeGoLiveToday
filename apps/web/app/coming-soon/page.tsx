@@ -4,52 +4,59 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import TrackView from '@/components/TrackView';
 
+
 export default function ComingSoon() {
   const router = useRouter();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [idea, setIdea] = useState('');
+  const [typedAdmin, setTypedAdmin] = useState('');
+  const [showAdminButton, setShowAdminButton] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(false);
 
-  // Admin unlock state
-  const [typedAdmin, setTypedAdmin] = useState('');
-  const [showAdminButton, setShowAdminButton] = useState(false);
-
-  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || '';
-
-  // Watch the typed characters — reveal admin button when matched
+  // Show admin button if correct email is typed
   useEffect(() => {
-    if (typedAdmin === ADMIN_PASSWORD && ADMIN_PASSWORD.length > 0) {
+    if (email === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
       setShowAdminButton(true);
     } else {
       setShowAdminButton(false);
     }
-  }, [typedAdmin, ADMIN_PASSWORD]);
-
-  const handleEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-
-    // Prevent paste unlock
-    if (e.nativeEvent instanceof InputEvent && e.nativeEvent.inputType === 'insertFromPaste') {
-      setEmail('');
-      return;
-    }
-
-    setEmail(value);
-    setTypedAdmin(value);
-  };
-
-  const goToAdmin = () => {
-    router.push('/admin/(protected)/page');
-  };
+  }, [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(false);
 
     try {
+      // 1. Get general location (country)
+      const geoRes = await fetch('https://ipapi.co/json/');
+      const geoData = await geoRes.json();
+      const country = geoData?.country_name || 'Unknown';
+
+      // 2. Log to Supabase
+      const userAgent = window.navigator.userAgent;
+      const page = '/coming-soon';
+
+      await fetch('/api/viewer-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page,
+          user_agent: userAgent,
+          type: 'form_submission',
+          location: country,
+        }),
+      });
+
+      // 3. Redirect to admin if email matches password
+      if (email === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+        router.push('/admin/(protected)/page');
+        return;
+      }
+
+      // 4. Send form data to Formspree
       const res = await fetch('https://formspree.io/f/xdkqdzpb', {
         method: 'POST',
         headers: {
@@ -82,8 +89,7 @@ export default function ComingSoon() {
         </h1>
 
         <p className="text-zinc-400 text-lg mb-6">
-          Where creators shine, and fans fuel the spotlight.  
-          This is **WeGoLiveToday** — the future of streaming starts now.
+          Where creators shine, and fans fuel the spotlight. This is WeGoLiveToday — the future of streaming starts now.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
@@ -95,7 +101,6 @@ export default function ComingSoon() {
           </a>
         </div>
 
-        {/* ──────────────── Form ──────────────── */}
         <form
           onSubmit={handleSubmit}
           className="flex flex-col items-center justify-center gap-3 mb-6"
@@ -113,7 +118,10 @@ export default function ComingSoon() {
             placeholder="Enter your email"
             required
             value={email}
-            onChange={handleEmailInput}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setTypedAdmin(e.target.value);
+            }}
             className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
 
@@ -133,29 +141,32 @@ export default function ComingSoon() {
           </button>
         </form>
 
+        {showAdminButton && (
+          <button
+            onClick={() => router.push('/admin/(protected)/page')}
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md mb-4 transition"
+          >
+            🔐 Go to Admin Panel
+          </button>
+        )}
+
         {submitted && (
           <p className="text-sm text-emerald-400 mb-4">
             Thanks for joining the waitlist! We'll keep you posted.
           </p>
         )}
         {error && (
-          <p className="text-sm text-red-400 mb-4">Something went wrong. Please try again.</p>
+          <p className="text-sm text-red-400 mb-4">
+            Something went wrong. Please try again.
+          </p>
         )}
 
-        {/* ──────────────── Hidden Admin Button ──────────────── */}
-        {showAdminButton && (
-          <button
-            onClick={goToAdmin}
-            className="mt-4 text-sm px-4 py-2 rounded bg-red-600 hover:bg-red-700 transition shadow-md animate-pulse"
-          >
-            🔐 Admin Access
-          </button>
-        )}
-
-        <p className="text-sm text-zinc-600 mt-10">
+        <p className="text-sm text-zinc-600">
           &copy; {new Date().getFullYear()} WeGoLiveToday Inc. All rights reserved.
         </p>
       </div>
     </main>
   );
 }
+
+
