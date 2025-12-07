@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 export default function LoginCard() {
   const router = useRouter()
   const sp = useSearchParams()
-  const next = sp.get('next') || '/admin'
+  const next = sp.get('next') || '/admin/(protected)/'
 
   const [pw, setPw] = React.useState('')
   const [show, setShow] = React.useState(false)
@@ -102,7 +102,7 @@ export default function LoginCard() {
         </button>
 
         <p className="text-center text-xs text-zinc-500">
-          Tip: this form posts to <code className="text-zinc-400">/api/admin/login</code> and
+          Tip: this form posts to <code className="text-zinc-400"></code> and
           sets a secure session cookie.
         </p>
       </form>
