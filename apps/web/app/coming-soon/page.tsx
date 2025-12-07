@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function ComingSoon() {
@@ -12,15 +12,41 @@ export default function ComingSoon() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(false);
 
+  // Admin unlock state
+  const [typedAdmin, setTypedAdmin] = useState('');
+  const [showAdminButton, setShowAdminButton] = useState(false);
+
+  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || '';
+
+  // Watch the typed characters — reveal admin button when matched
+  useEffect(() => {
+    if (typedAdmin === ADMIN_PASSWORD && ADMIN_PASSWORD.length > 0) {
+      setShowAdminButton(true);
+    } else {
+      setShowAdminButton(false);
+    }
+  }, [typedAdmin, ADMIN_PASSWORD]);
+
+  const handleEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    // Prevent paste unlock
+    if (e.nativeEvent instanceof InputEvent && e.nativeEvent.inputType === 'insertFromPaste') {
+      setEmail('');
+      return;
+    }
+
+    setEmail(value);
+    setTypedAdmin(value);
+  };
+
+  const goToAdmin = () => {
+    router.push('/admin/(protected)/page');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(false);
-
-    // Check for admin bypass
-    if (email === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-      router.push('/admin/(protected)/');
-      return;
-    }
 
     try {
       const res = await fetch('https://formspree.io/f/xdkqdzpb', {
@@ -29,11 +55,7 @@ export default function ComingSoon() {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify({
-          name,
-          email,
-          idea,
-        }),
+        body: JSON.stringify({ name, email, idea }),
       });
 
       if (res.ok) {
@@ -41,8 +63,9 @@ export default function ComingSoon() {
         setName('');
         setEmail('');
         setIdea('');
+        setTypedAdmin('');
       } else {
-        throw new Error('Failed to submit');
+        throw new Error('Form submission failed');
       }
     } catch (err) {
       console.error(err);
@@ -58,10 +81,10 @@ export default function ComingSoon() {
         </h1>
 
         <p className="text-zinc-400 text-lg mb-6">
-          Where creators shine, and fans fuel the spotlight. This is WeGoLiveToday — the future of streaming starts now.
+          Where creators shine, and fans fuel the spotlight.  
+          This is **WeGoLiveToday** — the future of streaming starts now.
         </p>
 
-        {/* CTA */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
           <a
             href="#notify"
@@ -71,7 +94,7 @@ export default function ComingSoon() {
           </a>
         </div>
 
-        {/* Form */}
+        {/* ──────────────── Form ──────────────── */}
         <form
           onSubmit={handleSubmit}
           className="flex flex-col items-center justify-center gap-3 mb-6"
@@ -89,7 +112,7 @@ export default function ComingSoon() {
             placeholder="Enter your email"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={handleEmailInput}
             className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
 
@@ -115,12 +138,20 @@ export default function ComingSoon() {
           </p>
         )}
         {error && (
-          <p className="text-sm text-red-400 mb-4">
-            Something went wrong. Please try again.
-          </p>
+          <p className="text-sm text-red-400 mb-4">Something went wrong. Please try again.</p>
         )}
 
-        <p className="text-sm text-zinc-600">
+        {/* ──────────────── Hidden Admin Button ──────────────── */}
+        {showAdminButton && (
+          <button
+            onClick={goToAdmin}
+            className="mt-4 text-sm px-4 py-2 rounded bg-red-600 hover:bg-red-700 transition shadow-md animate-pulse"
+          >
+            🔐 Admin Access
+          </button>
+        )}
+
+        <p className="text-sm text-zinc-600 mt-10">
           &copy; {new Date().getFullYear()} WeGoLiveToday Inc. All rights reserved.
         </p>
       </div>
