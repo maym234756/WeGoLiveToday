@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function ComingSoon() {
+  const router = useRouter();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [idea, setIdea] = useState('');
@@ -12,6 +15,12 @@ export default function ComingSoon() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(false);
+
+    // Check for admin bypass
+    if (email === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+      router.push('/admin');
+      return;
+    }
 
     try {
       const res = await fetch('https://formspree.io/f/xdkqdzpb', {
@@ -45,7 +54,7 @@ export default function ComingSoon() {
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-zinc-900 to-black text-white text-center px-4">
       <div className="max-w-xl w-full">
         <h1 className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
-           <span className="text-emerald-400">WeGoLiveToday</span> is Launching in 2026!
+          <span className="text-emerald-400">WeGoLiveToday</span> is Launching in 2026!
         </h1>
 
         <p className="text-zinc-400 text-lg mb-6">
@@ -53,7 +62,7 @@ export default function ComingSoon() {
           Whether you're here to stream or support, WeGoLiveToday is your stage.
         </p>
 
-        {/* CTA Buttons */}
+        {/* CTA */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
           <a
             href="#notify"
@@ -63,12 +72,11 @@ export default function ComingSoon() {
           </a>
         </div>
 
-        {/* Signup Form */}
+        {/* Form */}
         <form
           onSubmit={handleSubmit}
           className="flex flex-col items-center justify-center gap-3 mb-6"
         >
-          {/* Name (optional) */}
           <input
             type="text"
             placeholder="Your name (optional)"
@@ -77,7 +85,6 @@ export default function ComingSoon() {
             className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-600"
           />
 
-          {/* Email (required) */}
           <input
             type="email"
             placeholder="Enter your email"
@@ -87,7 +94,6 @@ export default function ComingSoon() {
             className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
 
-          {/* Idea Box (optional) */}
           <textarea
             placeholder="Have an idea? Drop it here (optional)"
             value={idea}
@@ -104,7 +110,6 @@ export default function ComingSoon() {
           </button>
         </form>
 
-        {/* Feedback Messages */}
         {submitted && (
           <p className="text-sm text-emerald-400 mb-4">
             Thanks for joining the waitlist! We'll keep you posted.

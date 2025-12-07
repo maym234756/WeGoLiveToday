@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import LiveCardComponent from '@/components/LiveCard';
+import LiveCardComponent from '../../components/LiveCard'; // ✅ Relative path fixes Vercel issue
 
 export type LiveCard = {
   id: string;
@@ -9,7 +9,8 @@ export type LiveCard = {
   host: string;
   viewers: number;
   tag: 'Adult';
-  thumb?: string;
+  thumb?: string;  // ✅ Optional
+  thumb2?: string;
 };
 
 const ADULT_STREAMS: LiveCard[] = [
@@ -50,9 +51,7 @@ export default function AdultClientView() {
     <main className="px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <h1 className="text-2xl font-semibold tracking-tight text-white">Adult Content</h1>
-        <p className="mt-1 text-sm text-zinc-400">
-          You are now viewing adult content only.
-        </p>
+        <p className="mt-1 text-sm text-zinc-400">You are now viewing adult content only.</p>
 
         {/* 🔍 Search bar */}
         <div className="mt-6">
