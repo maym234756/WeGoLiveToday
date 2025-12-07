@@ -16,6 +16,7 @@
     "@supabase/supabase-js": "^2.86.0",
     "@tsparticles/engine": "^3.9.1",
     "@tsparticles/react": "^3.0.0",
+    "@vercel/analytics": "^1.6.1",
     "clsx": "^2.1.1",
     "hls.js": "^1.6.15",
     "mongoose": "^9.0.0",
