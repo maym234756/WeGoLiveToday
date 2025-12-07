@@ -1,27 +1,28 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+// /app/api/viewer-log/route.ts
+import { createClient } from '@supabase/supabase-js'
+import { NextResponse } from 'next/server'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // Required for server-side writes
+)
 
 export async function POST(req: Request) {
-  const { page, user_agent, type, location } = await req.json();
+  const body = await req.json()
 
-  const { error } = await supabase.from('Viewers').insert([
-    {
-      page,
-      user_agent,
-      type,
-      location,
-    },
-  ]);
+  const { name, email, idea, user_agent } = body
+
+  const { error } = await supabase.from('waitlist_signups').insert({
+    name,
+    email,
+    idea,
+    user_agent,
+  })
 
   if (error) {
-    console.error('Supabase error:', error);
-    return NextResponse.json({ success: false }, { status: 500 });
+    console.error('Insert error:', error)
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true }, { status: 200 })
 }
