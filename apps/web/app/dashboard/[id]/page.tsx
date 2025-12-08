@@ -11,6 +11,7 @@ import AdultContentToggle from '@/components/AdultContent';
 import LogoutButton from '@/components/LogoutButton';
 import UpgradeModal from '@/components/UpgradeModal';
 import Image from 'next/image';
+import Sidebar from '@/components/dashboard/Sidebar';
 
 export default function UserDashboardPage() {
   const router = useRouter();
@@ -79,7 +80,10 @@ export default function UserDashboardPage() {
   };
 
   return (
-    <main className="px-4 py-8 sm:px-6 lg:px-8">
+  <div className="flex min-h-screen">
+    <Sidebar /> {/* Left navigation */}
+
+    <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         {/* ✅ Success Banner */}
         {showSuccessBanner && (
@@ -99,10 +103,9 @@ export default function UserDashboardPage() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            {/* 👇 Icon added beside greeting */}
             <h1 className="text-2xl font-semibold tracking-tight text-white flex items-center gap-2">
               <Image
-                src="/favicon.ico" // change to '/wgl-bolt.png' if you prefer your PNG
+                src="/favicon.ico"
                 alt="WeGoLiveToday"
                 width={20}
                 height={20}
@@ -111,7 +114,6 @@ export default function UserDashboardPage() {
               />
               {getGreeting()}, {displayName}
             </h1>
-
             <p className="mt-1 text-sm text-zinc-400">{email}</p>
             <p className="mt-1 text-md font-semibold text-emerald-400">
               {isPro ? 'WeGoLiveToday +' : 'WeGoLiveToday'}
@@ -120,19 +122,9 @@ export default function UserDashboardPage() {
 
           <div className="flex items-center gap-2">
             <TokenBadge />
-            {/* <AdultContentToggle /> */}
-
-            {/*
-          <Link className="btn btn-ghost border">  
-            Become a Streamer
-          </Link>
-          */}
-
-
             <Link href="/tokens" className="btn btn-primary">
               Purchase Tokens
             </Link>
-
             <UpgradeModal />
             <LogoutButton />
           </div>
@@ -141,7 +133,7 @@ export default function UserDashboardPage() {
         {/* Pro Feature Notice */}
         {!isPro ? (
           <div className="mt-6 p-4 border border-yellow-600 rounded bg-yellow-900/30 text-yellow-300">
-
+            {/* Add teaser text if you want */}
           </div>
         ) : (
           <div className="mt-6 p-4 border border-emerald-500 rounded bg-emerald-900/20 text-emerald-200">
@@ -165,14 +157,14 @@ export default function UserDashboardPage() {
           </section>
         )}
 
-        {/* Chat Component (Pro unlockable) */}
         <ChatInput isPro={isPro} />
 
-        {/* Browse All Streams */}
         <section className="mt-8">
           <DashboardBrowse initialStreams={[]} />
         </section>
       </div>
     </main>
-  );
+  </div>
+);
+
 }

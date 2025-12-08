@@ -73,27 +73,6 @@ export default function SignupForm() {
         return;
       }
 
-      // Insert into custom public table
-      const { error: dbError } = await supabase
-        .from('User Signup List')
-        .insert([
-          {
-            id: userId,
-            email,
-            first_name: firstName,
-            last_name: lastName,
-            name: fullName,
-            gender,
-            dob,
-            adult_acknowledged: true,
-          },
-        ]);
-
-      if (dbError) {
-        console.error("DB insert error:", dbError.message);
-        setError("Signup succeeded, but saving user info failed.");
-      }
-
       // Update metadata if session available
       if (signUpData?.session) {
         await supabase.auth.updateUser({
@@ -107,6 +86,33 @@ export default function SignupForm() {
           },
         });
       }
+
+try {
+  const { error, data } = await supabase.from('User Signup List').insert([
+    {
+      uuid: userId,
+      email,
+      name: `${firstName} ${lastName}`,
+      first_name: firstName,
+      last_name: lastName,
+      gender,
+      dob,
+      is_pro: false,
+      signed_up_at: new Date().toISOString(),
+    },
+  ]);
+
+  if (error) {
+    console.error('🔥 Supabase insert failed:', error.message);
+    console.error('🔎 Full error:', error);
+    throw new Error('Signup insert failed: ' + error.message);
+  }
+
+  console.log('✅ User inserted to custom table:', data);
+} catch (err: any) {
+  console.error('❌ Unexpected signup error:', err.message);
+}
+
 
       // Redirect
       window.location.href = '/dashboard';

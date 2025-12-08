@@ -1,24 +1,20 @@
 // apps/web/app/api/stripe/webhook/route.ts
+
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-// ✅ App Router segment config (recommended)
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Init Stripe (server-side)
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
-// Service role client (server-only)
 const supabase = createClient(
   process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!  // <- use the correct name
-)
-
-
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(req: Request) {
   const sig = headers().get('stripe-signature');
@@ -26,7 +22,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Missing Stripe signature' }, { status: 400 });
   }
 
-  // ⚠️ Important: use raw text (no JSON parsing) for Stripe verification
   const rawBody = await req.text();
 
   let event: Stripe.Event;
@@ -41,7 +36,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  // Handle successful checkout
+  // ✅ Handle successful checkout
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
 
@@ -54,9 +49,9 @@ export async function POST(req: Request) {
     }
 
     try {
-      // Update your public user table
+      // ✅ Update your user table
       const { error: tableError } = await supabase
-        .from('User Signup List')
+        .from('User Signup List') // Your main table
         .update({
           is_pro: true,
           upgraded_at: new Date().toISOString(),
@@ -64,21 +59,36 @@ export async function POST(req: Request) {
         .eq('uuid', userId);
 
       if (tableError) {
-        console.error('❌ Failed to update table:', tableError.message);
+        console.error('❌ Failed to update User Signup List:', tableError.message);
         return NextResponse.json({ error: tableError.message }, { status: 500 });
       }
 
-      // Also update Auth user metadata (requires service-role key)
+      // ✅ Optional: update subscriptions table if you created one
+      const { error: subError } = await supabase
+        .from('subscriptions')
+        .update({
+          status: 'active',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+        .eq('stripe_session_id', session.id);
+
+      if (subError) {
+        console.error('⚠️ Failed to update subscriptions table:', subError.message);
+        // Don’t block the response if this fails — log it
+      }
+
+      // ✅ Update Auth metadata (for RBAC or nav locking logic)
       const { error: authError } = await supabase.auth.admin.updateUserById(userId, {
         user_metadata: { pro: true },
       });
 
       if (authError) {
-        console.error('❌ Failed to update auth metadata:', authError.message);
+        console.error('❌ Failed to update Auth metadata:', authError.message);
         return NextResponse.json({ error: authError.message }, { status: 500 });
       }
 
-      console.log(`✅ User ${userId} upgraded (DB + Auth).`);
+      console.log(`✅ [Stripe Webhook] User ${userId} upgraded to PRO.`);
     } catch (err: any) {
       console.error('🔥 Webhook processing error:', err.message);
       return NextResponse.json({ error: err.message }, { status: 500 });
