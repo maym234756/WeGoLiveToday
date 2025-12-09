@@ -31,19 +31,12 @@ export default function ComingSoon() {
 
   // Load stored values from localStorage
   useEffect(() => {
-    const storedName = localStorage.getItem('waitlist_name');
     const storedEmail = localStorage.getItem('waitlist_email');
-
-    if (storedName) {
-      setName(storedName);
-      checkNameInSupabase(storedName);
-    }
-
     if (storedEmail) {
-      setEmail(storedEmail);
-      setSubmitted(true);
+      setSubmitted(true); // just show the arrow
     }
   }, []);
+
 
   // Admin Button Logic
   useEffect(() => {
