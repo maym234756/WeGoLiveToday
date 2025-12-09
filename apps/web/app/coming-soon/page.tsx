@@ -214,9 +214,10 @@ export default function ComingSoon() {
             </>
           )}
 
-        <p className="text-zinc-400 text-lg mb-6">
-          See any Issues; Email us @ teamwegolivetoday@yahoo.com
+        <p className="text-zinc-400 text-lg mb-6 break-words">
+          See any Issues? Email us @ <span className="break-all">teamwegolivetoday@yahoo.com</span>
         </p>
+
 
           {/* ARROW BUTTON (AUTHORIZED USER) */}
           {submitted && (
