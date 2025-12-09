@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import TrackView from '@/components/TrackView'; // Still assumes this file exists
+import TrackView from '@/components/Trackview';
+import { createClient } from '@supabase/supabase-js';
 
 export default function ComingSoon() {
   const router = useRouter();
@@ -10,12 +11,18 @@ export default function ComingSoon() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [idea, setIdea] = useState('');
-  const [typedAdmin, setTypedAdmin] = useState('');
-  const [showAdminButton, setShowAdminButton] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showAdminButton, setShowAdminButton] = useState(false);
 
+  // 🔥 Supabase Client
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  // Show Admin button if email matches password bypass
   useEffect(() => {
     if (email === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
       setShowAdminButton(true);
@@ -30,10 +37,12 @@ export default function ComingSoon() {
     setLoading(true);
 
     try {
+      // 🌍 Collect geo-data
       const geoRes = await fetch('https://ipapi.co/json/');
       const geoData = await geoRes.json();
       const country = geoData?.country_name || 'Unknown';
 
+      // Log form submission event
       await fetch('/api/viewer-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -45,31 +54,41 @@ export default function ComingSoon() {
         }),
       });
 
+      // 🔐 Admin Login Bypass
       if (email === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
         router.push('/admin/(protected)/page');
         return;
       }
 
-      const res = await fetch('https://formspree.io/f/xdkqdzpb', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({ name, email, idea }),
-      });
+      // 🚀 Insert into Supabase waitlist table
+const { error: insertError } = await supabase.from('notify_signups').insert([
+  {
+    name: name || null,
+    email,
+    comment: idea || null,
+    location: country,
+    created_at: new Date().toISOString(),
+  },
+]);
 
-      if (res.ok) {
-        setSubmitted(true);
-        setName('');
-        setEmail('');
-        setIdea('');
-        setTypedAdmin('');
-      } else {
-        throw new Error('Form submission failed');
+
+
+      if (insertError) {
+        console.error('Supabase Insert Error:', insertError);
+        throw new Error('Failed to save to database');
       }
+
+      // Success
+      setSubmitted(true);
+      setName('');
+      setEmail('');
+      setIdea('');
+
+      localStorage.setItem('waitlist_email', email);
+
+
     } catch (err) {
-      console.error(err);
+      console.error('Form error:', err);
       setError(true);
     } finally {
       setLoading(false);
@@ -79,22 +98,14 @@ export default function ComingSoon() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-zinc-900 to-black text-white text-center px-4">
       <div className="max-w-xl w-full animate-fade-in">
+
         <h1 className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
           <span className="text-emerald-400">WeGoLiveToday</span> is Launching in 2026!
         </h1>
 
         <p className="text-zinc-400 text-lg mb-6">
-          Where creators shine, and fans fuel the spotlight. This is WeGoLiveToday — the future of streaming starts now.
+          Where creators shine, and fans fuel the spotlight. The future of streaming starts now.
         </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-          <a
-            href="#notify"
-            className="inline-block rounded border border-zinc-700 px-6 py-2 text-zinc-300 hover:bg-zinc-800 transition"
-          >
-            Learn More
-          </a>
-        </div>
 
         <form
           onSubmit={handleSubmit}
@@ -106,7 +117,7 @@ export default function ComingSoon() {
             placeholder="Your name (optional)"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-600"
+            className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none"
           />
 
           <input
@@ -114,10 +125,7 @@ export default function ComingSoon() {
             placeholder="Enter your email"
             required
             value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setTypedAdmin(e.target.value);
-            }}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
 
@@ -126,16 +134,28 @@ export default function ComingSoon() {
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
             rows={4}
-            className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-600"
+            className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none"
           />
 
-          <button
-            type="submit"
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-md transition w-full sm:w-auto disabled:opacity-50"
-            disabled={loading}
-          >
-            {loading ? 'Submitting...' : submitted ? '✓ Submitted!' : 'Notify Me - New Updates'}
-          </button>
+<div className="flex items-center gap-2 mt-2">
+  <button
+    type="submit"
+    className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-md transition w-full sm:w-auto disabled:opacity-50"
+    disabled={loading}
+  >
+    {loading ? 'Submitting...' : submitted ? '✓ Submitted!' : 'Notify Me - New Updates'}
+  </button>
+
+  {(submitted || typeof window !== 'undefined' && localStorage.getItem('waitlist_email')) && (
+    <button
+      onClick={() => router.push('/coming-soon/updates')}
+      className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md transition"
+    >
+      ➡️
+    </button>
+  )}
+</div>
+
         </form>
 
         {showAdminButton && (
@@ -152,6 +172,7 @@ export default function ComingSoon() {
             Thanks for joining the waitlist! We'll keep you posted.
           </p>
         )}
+
         {error && (
           <p className="text-sm text-red-400 mb-4">
             Something went wrong. Please try again.

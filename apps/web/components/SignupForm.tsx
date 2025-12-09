@@ -3,6 +3,8 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { logSupabaseError } from '@/utils/logError';
+
 
 export default function SignupForm() {
   const [error, setError] = React.useState<string | null>(null);
@@ -73,6 +75,34 @@ export default function SignupForm() {
         return;
       }
 
+const numericId = Date.now(); // Define it here so it's available later
+
+try {
+  const { error } = await supabase.from('User Signup List').insert([
+    {
+      id: numericId,
+      email: email,
+      name: `${firstName} ${lastName}`,
+      first_name: firstName,
+      last_name: lastName,
+      gender: gender,
+      dob: dob,
+      is_pro: false,
+      signed_up_at: new Date().toISOString(),
+      auth_user_id: userId,
+    },
+  ]);
+
+  if (error) {
+    logSupabaseError('Insert into User Signup List failed', error);
+    throw new Error('Custom table insert failed.');
+  }
+
+  console.log('✅ Inserted into custom table!');
+} catch (err: any) {
+  console.error('📛 Insert block error:', err.message || err);
+}
+
       // Update metadata if session available
       if (signUpData?.session) {
         await supabase.auth.updateUser({
@@ -87,35 +117,9 @@ export default function SignupForm() {
         });
       }
 
-try {
-  const { error, data } = await supabase.from('User Signup List').insert([
-    {
-      uuid: userId,
-      email,
-      name: `${firstName} ${lastName}`,
-      first_name: firstName,
-      last_name: lastName,
-      gender,
-      dob,
-      is_pro: false,
-      signed_up_at: new Date().toISOString(),
-    },
-  ]);
-
-  if (error) {
-    console.error('🔥 Supabase insert failed:', error.message);
-    console.error('🔎 Full error:', error);
-    throw new Error('Signup insert failed: ' + error.message);
-  }
-
-  console.log('✅ User inserted to custom table:', data);
-} catch (err: any) {
-  console.error('❌ Unexpected signup error:', err.message);
-}
-
 
       // Redirect
-      window.location.href = '/dashboard';
+      window.location.href = `/dashboard/${numericId}`;
 
     } catch (err: any) {
       console.error("Unexpected error:", err);
@@ -254,7 +258,7 @@ try {
           disabled={loading}
           className="btn btn-primary w-full disabled:opacity-40"
         >
-          {loading ? 'Creating account...' : 'Create account'}
+          {loading ? 'Creating Account...' : 'Create Account'}
         </button>
       </form>
 
