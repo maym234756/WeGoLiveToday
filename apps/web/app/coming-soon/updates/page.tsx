@@ -90,7 +90,7 @@ export default function ComingSoonUpdates() {
               <ul className="list-disc list-inside space-y-1">
                 <li>Collab streams</li>
                 <li>Tipping & support tools</li>
-                <li>Mobile app</li>
+                <li>Schedule sctreaming</li>
               </ul>
             </div>
 
