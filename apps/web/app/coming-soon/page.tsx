@@ -132,9 +132,11 @@ export default function ComingSoon() {
       <div className="max-w-xl w-full animate-fade-in">
 
         {/* TITLE */}
-        <h1 className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
-          <span className="text-emerald-400">WeGoLiveToday</span> is Launching in 2026!
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold mb-4 leading-tight break-words text-balance">
+          <span className="text-emerald-400 block">WeGoLiveToday</span>
+          <span className="block">is Launching in 2026!</span>
         </h1>
+
 
         {/* WELCOME USER */}
         {nameChecked && submitted && name && (
