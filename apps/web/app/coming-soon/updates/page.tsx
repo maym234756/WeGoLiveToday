@@ -12,33 +12,37 @@ export default function ComingSoonUpdates() {
 
   // 🔍 Check Access + Load User Name
   useEffect(() => {
-    const checkAccess = async () => {
-      const email = localStorage.getItem('waitlist_name');
-      if (!email) return router.push('/coming-soon');
+  const checkAccess = async () => {
+    const storedName = localStorage.getItem('waitlist_name');
 
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+    // If no name saved, redirect
+    if (!storedName) return router.push('/coming-soon');
 
-      const { data, error } = await supabase
-        .from('notify_signups')
-        .select('id, name')
-        .eq('name', userName)
-        .single();
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
-      if (data && !error) {
-        setAuthorized(true);
-        setUserName(data.name || '');
-      } else {
-        router.push('/coming-soon');
-      }
+    // Query Supabase for the stored name
+    const { data, error } = await supabase
+      .from('notify_signups')
+      .select('id, name')
+      .eq('name', storedName)
+      .single();
 
-      setLoading(false);
-    };
+    if (data && !error) {
+      setAuthorized(true);
+      setUserName(data.name || '');
+    } else {
+      router.push('/coming-soon');
+    }
 
-    checkAccess();
-  }, [router]);
+    setLoading(false);
+  };
+
+  checkAccess();
+}, [router]);
+
 
   if (loading || !authorized) return null;
 
