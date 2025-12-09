@@ -16,7 +16,7 @@ export default function ComingSoonUpdates() {
     const storedName = localStorage.getItem('waitlist_name');
 
     // If no name saved, redirect
-    if (!storedName) return router.push('/coming-soon');
+    if (!storedName) return router.push('/coming-soon/updates');
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
