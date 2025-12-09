@@ -156,13 +156,18 @@ export default function ComingSoon() {
 
 
         {/* FORM */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3 mb-6">
+          <form 
+            onSubmit={handleSubmit} 
+            className="flex flex-col gap-3 mb-6"
+            autoComplete="on" // ✅ This is correct placement
+          > 
 
           {/* NAME */}
           <div className="flex gap-2 w-full">
             <input
               type="text"
               placeholder="Username"
+              autoComplete='username'
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500"
