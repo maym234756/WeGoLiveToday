@@ -24,7 +24,7 @@ export default function ComingSoonUpdates() {
       const { data, error } = await supabase
         .from('notify_signups')
         .select('id, name')
-        .eq('email', 'username')
+        .eq('name', username)
         .single();
 
       if (data && !error) {
