@@ -34,7 +34,7 @@ export default function ComingSoonUpdates() {
       setAuthorized(true);
       setUserName(data.name || '');
     } else {
-      router.push('/coming-soon');
+      router.push('/coming-soon/updates');
     }
 
     setLoading(false);
