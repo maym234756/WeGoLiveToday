@@ -215,7 +215,7 @@ export default function ComingSoon() {
           )}
 
         <p className="text-zinc-400 text-lg mb-6">
-          See any Issues; Email us: teamwegolivetoday@yahoo.com
+          See any Issues; Email us @ teamwegolivetoday@yahoo.com
         </p>
 
           {/* ARROW BUTTON (AUTHORIZED USER) */}
