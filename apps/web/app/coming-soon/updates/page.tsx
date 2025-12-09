@@ -80,7 +80,7 @@ export default function ComingSoonUpdates() {
                 <li>Streamer Customization Page</li>
                 <li>Go‑live notifications</li>
                 <li>Creator analytics</li>
-                <li>Instant Payment Processing</li>
+                <li>Instant payment processing</li>
 
               </ul>
             </div>
