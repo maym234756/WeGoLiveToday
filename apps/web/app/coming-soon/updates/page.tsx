@@ -1,5 +1,3 @@
-// apps/web/app/coming-soon/updates/page.tsx
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -9,20 +7,12 @@ import { createClient } from '@supabase/supabase-js';
 export default function ComingSoonUpdates() {
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState('');
   const router = useRouter();
 
   useEffect(() => {
     const checkAccess = async () => {
       const email = localStorage.getItem('waitlist_email');
-      const name = localStorage.getItem('waitlist_name');
-
-      if (name) setUserName(name);
-
-      if (!email) {
-        router.push('/coming-soon');
-        return;
-      }
+      if (!email) return router.push('/coming-soon');
 
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,43 +40,79 @@ export default function ComingSoonUpdates() {
   if (loading || !authorized) return null;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white flex items-center justify-center px-4">
-      <div className="max-w-2xl w-full bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl p-8 animate-fade-in">
+    <main className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white px-4 py-12 flex justify-center">
+      <div className="max-w-3xl w-full bg-zinc-950 border border-zinc-800 rounded-lg shadow-lg p-8 animate-fade-in">
 
-        {/* Welcome user if name available */}
-        {userName && (
-          <p className="text-xl text-emerald-400 font-semibold mb-2">
-            👋 Welcome back, {userName.split(' ')[0]}!
-          </p>
-        )}
-
-        <h1 className="text-3xl sm:text-4xl font-extrabold mb-4 text-emerald-400">
-          🚀 WeGoLiveToday Updates
+        {/* 🎉 Welcome Block */}
+        <h1 className="text-3xl md:text-4xl font-bold text-emerald-400 mb-2">
+          You’re in 🎉
         </h1>
-
-        <p className="text-zinc-400 mb-6 text-base sm:text-lg">
-          You're officially on the inside. Here's what we're building just for you:
+        <p className="text-zinc-300 text-lg mb-6">
+          Welcome to early access for <strong>We Go Live Today</strong>.<br />
+          This is where we’ll share what we’re building — before anyone else sees it.
         </p>
 
-        <ul className="space-y-5 text-zinc-300 list-disc list-inside">
-          <li className="transition-all duration-300 hover:translate-x-1 hover:text-white">
-            ✅ Finalizing <span className="text-white font-medium">Stream Manager</span> core components
-          </li>
-          <li className="transition-all duration-300 hover:translate-x-1 hover:text-white">
-            🎨 Designing the <span className="text-white font-medium">Creator Dashboard</span> to streamline your tools
-          </li>
-          <li className="transition-all duration-300 hover:translate-x-1 hover:text-white">
-            📢 Launching <span className="text-white font-medium">Closed Alpha Testing in Q3 2025</span>
-          </li>
-          <li className="transition-all duration-300 hover:translate-x-1 hover:text-white">
-            💬 Feedback system launching so you can help shape the platform
-          </li>
-        </ul>
+        {/* 📌 Right now / Next / Later Roadmap */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-white mb-2">🛠 Roadmap Overview</h2>
 
-        <div className="mt-10 text-center">
+          <div className="grid md:grid-cols-3 gap-6 text-zinc-300 text-sm">
+            <div>
+              <h3 className="text-white font-medium mb-1">🔧 Building Now</h3>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Creator profiles</li>
+                <li>Basic go‑live flow</li>
+                <li>Viewer watch page + chat</li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-white font-medium mb-1">⏭ Up Next</h3>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Follow / favorite creators</li>
+                <li>Notifications when someone goes live</li>
+                <li>Basic analytics for creators</li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-white font-medium mb-1">💡 Later Ideas</h3>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Collab streams</li>
+                <li>Tipping / support</li>
+                <li>Mobile app</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* 📢 What is WGLT */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-white mb-2">📺 What is We Go Live Today?</h2>
+          <p className="text-zinc-400 text-sm">
+            We Go Live Today is a streaming platform focused on what’s happening <strong>right now</strong>.
+            Instead of digging through old VODs, viewers see what’s live today — and creators get tools built for frequent streaming and discovery.
+          </p>
+        </div>
+
+        {/* 📬 Call for Feedback */}
+        <div className="mb-10">
+          <h2 className="text-xl font-semibold text-white mb-2">💬 Help Shape This</h2>
+          <p className="text-zinc-400 text-sm mb-2">
+            Are you a creator, viewer, or both? We'd love to hear from you.
+          </p>
+          <p className="text-zinc-400 text-sm">
+            Just reply to the welcome email and let us know:
+            <br />– What you stream or love to watch
+            <br />– One thing you wish other platforms did better
+          </p>
+        </div>
+
+        {/* 🔙 Back Button */}
+        <div className="flex justify-center">
           <button
             onClick={() => router.push('/coming-soon')}
-            className="bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-2 rounded-md transition border border-zinc-700 hover:border-emerald-500"
+            className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md transition"
           >
             ← Back to Coming Soon
           </button>
