@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Trackview from '@/components/Trackview';
+import TrackView from '@/components/TrackView';
 import { createClient } from '@supabase/supabase-js';
 
 export default function ComingSoon() {
