@@ -2,21 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import TrackView from '@/components/TrackView';
 import { createClient } from '@supabase/supabase-js';
 
 export default function ComingSoon() {
   const router = useRouter();
 
+  // FORM STATE
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [idea, setIdea] = useState('');
+
+  // UI STATE
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showAdminButton, setShowAdminButton] = useState(false);
-  const [showEmail, setShowEmail] = useState(true);
 
+  // Name-check logic
+  const [checkingName, setCheckingName] = useState(false);
+  const [nameChecked, setNameChecked] = useState(false);
+  const [showSignupFields, setShowSignupFields] = useState(true);
 
   // 🔥 Supabase Client
   const supabase = createClient(
@@ -24,73 +29,97 @@ export default function ComingSoon() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  // Show Admin button if email matches password bypass
+  // Load stored values from localStorage
   useEffect(() => {
-    if (email === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-      setShowAdminButton(true);
-    } else {
-      setShowAdminButton(false);
+    const storedName = localStorage.getItem('waitlist_name');
+    const storedEmail = localStorage.getItem('waitlist_email');
+
+    if (storedName) {
+      setName(storedName);
+      checkNameInSupabase(storedName);
     }
+
+    if (storedEmail) {
+      setEmail(storedEmail);
+      setSubmitted(true);
+    }
+  }, []);
+
+  // Admin Button Logic
+  useEffect(() => {
+    setShowAdminButton(email === process.env.NEXT_PUBLIC_ADMIN_PASSWORD);
   }, [email]);
 
+  // 🔍 Check if user name exists in Supabase
+  const checkNameInSupabase = async (inputName?: string) => {
+    const checkName = (inputName ?? name).trim();
+    if (!checkName) return;
+
+    setCheckingName(true);
+
+    const { data, error } = await supabase
+      .from('notify_signups')
+      .select('id')
+      .ilike('name', checkName); // case-insensitive
+
+    // If user already exists → show arrow
+    if (data && data.length > 0) {
+      setSubmitted(true);
+      setShowSignupFields(false);
+      localStorage.setItem('waitlist_name', checkName);
+    } else {
+      setSubmitted(false);
+      setShowSignupFields(true);
+    }
+
+    setNameChecked(true);
+    setCheckingName(false);
+  };
+
+  // ON SUBMIT
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(false);
     setLoading(true);
 
     try {
-      // 🌍 Collect geo-data
+      // 🌍 Get location
       const geoRes = await fetch('https://ipapi.co/json/');
       const geoData = await geoRes.json();
       const country = geoData?.country_name || 'Unknown';
 
-      // Log form submission event
-      await fetch('/api/viewer-log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          page: '/coming-soon',
-          user_agent: window.navigator.userAgent,
-          type: 'form_submission',
-          location: country,
-        }),
-      });
-
-      // 🔐 Admin Login Bypass
+      // Admin redirect
       if (email === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
         router.push('/admin/(protected)/page');
         return;
       }
 
-      // 🚀 Insert into Supabase waitlist table
+      // Save new signup
       const { error: insertError } = await supabase.from('notify_signups').insert([
         {
-          name: name || null,
-          email,
+          name,
+          email: email || null,
           comment: idea || null,
           location: country,
           created_at: new Date().toISOString(),
         },
       ]);
 
-
-
       if (insertError) {
         console.error('Supabase Insert Error:', insertError);
-        throw new Error('Failed to save to database');
+        throw new Error('Could not save to Supabase');
       }
 
       // Success
+      localStorage.setItem('waitlist_name', name);
+      if (email) localStorage.setItem('waitlist_email', email);
+
       setSubmitted(true);
-      setName('');
-      setEmail('');
+      setShowSignupFields(false);
       setIdea('');
 
-      localStorage.setItem('waitlist_email', email);
-
-
     } catch (err) {
-      console.error('Form error:', err);
+      console.error(err);
       setError(true);
     } finally {
       setLoading(false);
@@ -98,99 +127,120 @@ export default function ComingSoon() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-zinc-900 to-black text-white text-center px-4">
+    <main className="min-h-screen flex items-center justify-center 
+      bg-gradient-to-br from-black via-zinc-900 to-black text-white text-center px-4">
       <div className="max-w-xl w-full animate-fade-in">
 
+        {/* TITLE */}
         <h1 className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
           <span className="text-emerald-400">WeGoLiveToday</span> is Launching in 2026!
         </h1>
 
-        <p className="text-zinc-400 text-lg mb-6">
-          Where creators shine, and fans fuel the spotlight. The future of streaming starts now.
-        </p>
-
-        <p className="text-zinc-400 text-lg mb-6">
-          Don’t miss what’s coming next!
-            Join the free update list, and you’ll instantly unlock the arrow icon that leads to our upcoming features and announcements page.
-        </p>
-
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col items-center justify-center gap-3 mb-6"
-          aria-label="Notify Form"
-        >
-          <input
-            type="text"
-            placeholder="Your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none"
-          />
-
-      {showEmail && (
-        <input
-          type="email"
-          placeholder="Enter your email (optional)"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        />
-      )}
-
-
-          <textarea
-            placeholder="Comment here (optional)"
-            value={idea}
-            onChange={(e) => setIdea(e.target.value)}
-            rows={4}
-            className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none"
-          />
-
-      <div className="flex items-center gap-2 mt-2">
-        <button
-          type="submit"
-          className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-md transition w-full sm:w-auto disabled:opacity-50"
-          disabled={loading}
-        >
-          {loading ? 'Submitting...' : submitted ? '✓ Submitted!' : 'Notify Me - New Updates'}
-        </button>
-
-        {(submitted || typeof window !== 'undefined' && localStorage.getItem('waitlist_email')) && (
-          <button
-            onClick={() => router.push('/coming-soon/updates')}
-            className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md transition"
-          >
-            ➡️
-          </button>
+        {/* WELCOME USER */}
+        {nameChecked && submitted && name && (
+          <p className="text-xl font-semibold text-emerald-400 mb-2 animate-pulse">
+            Welcome back, {name}! 👋
+          </p>
         )}
-      </div>
 
+        <p className="text-zinc-400 text-lg mb-6">
+          Join the free update list and unlock exclusive behind-the-scenes features.
+        </p>
+
+        <ol className="text-zinc-400 text-left text-base mb-6 space-y-2 list-decimal list-inside">
+          <li>
+            <span className="font-semibold text-white">Enter your name</span> – We'll check if you're already on the list.
+          </li>
+          <li>
+            <span className="font-semibold text-white">Not on the list?</span> Add your name, email (optional), and a quick comment if you'd like.
+          </li>
+          <li>
+            <span className="font-semibold text-white">You're in!</span> Once subscribed, an arrow ➡️ will appear giving you access to future updates.
+          </li>
+        </ol>
+
+
+        {/* FORM */}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 mb-6">
+
+          {/* NAME */}
+          <div className="flex gap-2 w-full">
+            <input
+              type="text"
+              placeholder="Enter your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500"
+            />
+
+            <button
+              type="button"
+              onClick={() => checkNameInSupabase()}
+              disabled={!name || checkingName}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md"
+            >
+              {checkingName ? '...' : 'Check'}
+            </button>
+          </div>
+
+          {/* ONLY SHOW EMAIL + COMMENT IF USER NOT FOUND */}
+          {showSignupFields && (
+            <>
+              <input
+                type="email"
+                placeholder="Enter your email (optional)"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white"
+              />
+
+              <textarea
+                placeholder="Comment (optional)"
+                value={idea}
+                onChange={(e) => setIdea(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white"
+              />
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 mt-2 rounded-md"
+              >
+                {loading ? 'Submitting...' : 'Notify Me – New Updates'}
+              </button>
+            </>
+          )}
+
+          {/* ARROW BUTTON (AUTHORIZED USER) */}
+          {submitted && (
+            <button
+              type="button"
+              onClick={() => router.push('/coming-soon/updates')}
+              className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md mt-2"
+            >
+              ➡️
+            </button>
+          )}
         </form>
 
+        {/* ADMIN BUTTON */}
         {showAdminButton && (
           <button
             onClick={() => router.push('/admin/(protected)/page')}
-            className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md mb-4 transition"
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md mb-4"
           >
-            🔐 Go to Admin Panel
+            🔐 Admin Panel
           </button>
         )}
 
-        {submitted && (
-          <p className="text-sm text-emerald-400 mb-4 animate-pulse">
-            Thanks for joining the waitlist! We'll keep you posted.
-          </p>
-        )}
-
+        {/* ERROR */}
         {error && (
-          <p className="text-sm text-red-400 mb-4">
-            Something went wrong. Please try again.
-          </p>
+          <p className="text-red-400 text-sm">Something went wrong. Try again.</p>
         )}
 
-        <p className="text-sm text-zinc-600">
-          &copy; {new Date().getFullYear()} WeGoLiveToday Inc. All rights reserved.
+        <p className="text-sm text-zinc-600 mt-6">
+          &copy; {new Date().getFullYear()} WeGoLiveToday Inc.
         </p>
       </div>
     </main>
