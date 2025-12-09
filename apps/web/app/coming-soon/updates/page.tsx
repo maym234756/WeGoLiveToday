@@ -7,8 +7,10 @@ import { createClient } from '@supabase/supabase-js';
 export default function ComingSoonUpdates() {
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState('');
   const router = useRouter();
 
+  // 🔍 Check Access + Load User Name
   useEffect(() => {
     const checkAccess = async () => {
       const email = localStorage.getItem('waitlist_email');
@@ -21,12 +23,13 @@ export default function ComingSoonUpdates() {
 
       const { data, error } = await supabase
         .from('notify_signups')
-        .select('id')
+        .select('id, name')
         .eq('email', email)
         .single();
 
       if (data && !error) {
         setAuthorized(true);
+        setUserName(data.name || '');
       } else {
         router.push('/coming-soon');
       }
@@ -41,22 +44,27 @@ export default function ComingSoonUpdates() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white px-4 py-12 flex justify-center">
-      <div className="max-w-3xl w-full bg-zinc-950 border border-zinc-800 rounded-lg shadow-lg p-8 animate-fade-in">
+      <div className="max-w-3xl w-full bg-zinc-950 border border-zinc-800 rounded-lg shadow-xl p-8 animate-fade-in">
 
-        {/* 🎉 Welcome Block */}
-        <h1 className="text-3xl md:text-4xl font-bold text-emerald-400 mb-2">
-          You’re in 🎉
+        {/* 🎉 Personalized Welcome Section */}
+        <h1 className="text-3xl md:text-4xl font-bold text-emerald-400 mb-3">
+          You’re in 🎉 {userName && <span className="text-white">Welcome, {userName}!</span>}
         </h1>
-        <p className="text-zinc-300 text-lg mb-6">
-          Welcome to early access for <strong>We Go Live Today</strong>.<br />
-          This is where we’ll share what we’re building — before anyone else sees it.
+
+        <p className="text-zinc-300 text-lg mb-6 leading-relaxed">
+          You're officially in early access for <strong>We Go Live Today</strong>.  
+          This space gives you first-look access to what we're building — before anyone else sees it.
         </p>
 
-        {/* 📌 Right now / Next / Later Roadmap */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-white mb-2">🛠 Roadmap Overview</h2>
+
+        {/* ============================
+            ROADMAP – NOW / NEXT / LATER
+        ============================ */}
+        <div className="mb-10">
+          <h2 className="text-xl font-semibold text-white mb-3">🛠 Roadmap Overview</h2>
 
           <div className="grid md:grid-cols-3 gap-6 text-zinc-300 text-sm">
+
             <div>
               <h3 className="text-white font-medium mb-1">🔧 Building Now</h3>
               <ul className="list-disc list-inside space-y-1">
@@ -70,8 +78,8 @@ export default function ComingSoonUpdates() {
               <h3 className="text-white font-medium mb-1">⏭ Up Next</h3>
               <ul className="list-disc list-inside space-y-1">
                 <li>Follow / favorite creators</li>
-                <li>Notifications when someone goes live</li>
-                <li>Basic analytics for creators</li>
+                <li>Go‑live notifications</li>
+                <li>Basic creator analytics</li>
               </ul>
             </div>
 
@@ -79,36 +87,50 @@ export default function ComingSoonUpdates() {
               <h3 className="text-white font-medium mb-1">💡 Later Ideas</h3>
               <ul className="list-disc list-inside space-y-1">
                 <li>Collab streams</li>
-                <li>Tipping / support</li>
+                <li>Tipping & support tools</li>
                 <li>Mobile app</li>
               </ul>
             </div>
+
           </div>
         </div>
 
-        {/* 📢 What is WGLT */}
-        <div className="mb-8">
+
+        {/* ============================
+            WHAT IS WGLT
+        ============================ */}
+        <div className="mb-10">
           <h2 className="text-xl font-semibold text-white mb-2">📺 What is We Go Live Today?</h2>
-          <p className="text-zinc-400 text-sm">
-            We Go Live Today is a streaming platform focused on what’s happening <strong>right now</strong>.
-            Instead of digging through old VODs, viewers see what’s live today — and creators get tools built for frequent streaming and discovery.
+
+          <p className="text-zinc-400 text-sm leading-relaxed">
+            We Go Live Today is a streaming platform built around what’s happening <strong>right now</strong>.
+            Instead of digging through old VODs, viewers discover live events happening today — with creators
+            getting tools focused on growth, visibility, and daily engagement.
           </p>
         </div>
 
-        {/* 📬 Call for Feedback */}
-        <div className="mb-10">
+
+        {/* ============================
+            FEEDBACK SECTION
+        ============================ */}
+        <div className="mb-12">
           <h2 className="text-xl font-semibold text-white mb-2">💬 Help Shape This</h2>
+
           <p className="text-zinc-400 text-sm mb-2">
             Are you a creator, viewer, or both? We'd love to hear from you.
           </p>
-          <p className="text-zinc-400 text-sm">
-            Just reply to the welcome email and let us know:
-            <br />– What you stream or love to watch
-            <br />– One thing you wish other platforms did better
+
+          <p className="text-zinc-400 text-sm leading-relaxed">
+            Reply to the welcome email and tell us:
+            <br />– What you stream or enjoy watching  
+            <br />– One thing you wish today's platforms did better  
           </p>
         </div>
 
-        {/* 🔙 Back Button */}
+
+        {/* ============================
+            BACK BUTTON
+        ============================ */}
         <div className="flex justify-center">
           <button
             onClick={() => router.push('/coming-soon')}
@@ -117,6 +139,7 @@ export default function ComingSoonUpdates() {
             ← Back to Coming Soon
           </button>
         </div>
+
       </div>
     </main>
   );
