@@ -63,15 +63,15 @@ export default function ComingSoon() {
       }
 
       // 🚀 Insert into Supabase waitlist table
-const { error: insertError } = await supabase.from('notify_signups').insert([
-  {
-    name: name || null,
-    email,
-    comment: idea || null,
-    location: country,
-    created_at: new Date().toISOString(),
-  },
-]);
+      const { error: insertError } = await supabase.from('notify_signups').insert([
+        {
+          name: name || null,
+          email,
+          comment: idea || null,
+          location: country,
+          created_at: new Date().toISOString(),
+        },
+      ]);
 
 
 
@@ -127,16 +127,16 @@ const { error: insertError } = await supabase.from('notify_signups').insert([
             className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none"
           />
 
-{showEmail && (
-  <input
-    type="email"
-    placeholder="Enter your email (optional)"
-    required
-    value={email}
-    onChange={(e) => setEmail(e.target.value)}
-    className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-  />
-)}
+      {showEmail && (
+        <input
+          type="email"
+          placeholder="Enter your email (optional)"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        />
+      )}
 
 
           <textarea
@@ -147,24 +147,24 @@ const { error: insertError } = await supabase.from('notify_signups').insert([
             className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none"
           />
 
-<div className="flex items-center gap-2 mt-2">
-  <button
-    type="submit"
-    className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-md transition w-full sm:w-auto disabled:opacity-50"
-    disabled={loading}
-  >
-    {loading ? 'Submitting...' : submitted ? '✓ Submitted!' : 'Notify Me - New Updates'}
-  </button>
+      <div className="flex items-center gap-2 mt-2">
+        <button
+          type="submit"
+          className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-md transition w-full sm:w-auto disabled:opacity-50"
+          disabled={loading}
+        >
+          {loading ? 'Submitting...' : submitted ? '✓ Submitted!' : 'Notify Me - New Updates'}
+        </button>
 
-  {(submitted || typeof window !== 'undefined' && localStorage.getItem('waitlist_email')) && (
-    <button
-      onClick={() => router.push('/coming-soon/updates')}
-      className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md transition"
-    >
-      ➡️
-    </button>
-  )}
-</div>
+        {(submitted || typeof window !== 'undefined' && localStorage.getItem('waitlist_email')) && (
+          <button
+            onClick={() => router.push('/coming-soon/updates')}
+            className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md transition"
+          >
+            ➡️
+          </button>
+        )}
+      </div>
 
         </form>
 
