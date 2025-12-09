@@ -162,7 +162,7 @@ export default function ComingSoon() {
           <div className="flex gap-2 w-full">
             <input
               type="text"
-              placeholder="Name"
+              placeholder="Username"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500"
