@@ -13,7 +13,7 @@ export default function ComingSoonUpdates() {
   // 🔍 Check Access + Load User Name
   useEffect(() => {
     const checkAccess = async () => {
-      const email = localStorage.getItem('waitlist_email');
+      const email = localStorage.getItem('waitlist_name');
       if (!email) return router.push('/coming-soon');
 
       const supabase = createClient(
@@ -24,7 +24,7 @@ export default function ComingSoonUpdates() {
       const { data, error } = await supabase
         .from('notify_signups')
         .select('id, name')
-        .eq('email', email)
+        .eq('email', 'username')
         .single();
 
       if (data && !error) {
