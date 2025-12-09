@@ -15,6 +15,8 @@ export default function ComingSoon() {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showAdminButton, setShowAdminButton] = useState(false);
+  const [showEmail, setShowEmail] = useState(true);
+
 
   // 🔥 Supabase Client
   const supabase = createClient(
@@ -107,6 +109,11 @@ const { error: insertError } = await supabase.from('notify_signups').insert([
           Where creators shine, and fans fuel the spotlight. The future of streaming starts now.
         </p>
 
+        <p className="text-zinc-400 text-lg mb-6">
+          Don’t miss what’s coming next!
+            Join the free update list, and you’ll instantly unlock the arrow icon that leads to our upcoming features and announcements page.
+        </p>
+
         <form
           onSubmit={handleSubmit}
           className="flex flex-col items-center justify-center gap-3 mb-6"
@@ -114,23 +121,26 @@ const { error: insertError } = await supabase.from('notify_signups').insert([
         >
           <input
             type="text"
-            placeholder="Your name (optional)"
+            placeholder="Your name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none"
           />
 
-          <input
-            type="email"
-            placeholder="Enter your email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
+{showEmail && (
+  <input
+    type="email"
+    placeholder="Enter your email (optional)"
+    required
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+    className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+  />
+)}
+
 
           <textarea
-            placeholder="Comment Here (optional)"
+            placeholder="Comment here (optional)"
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
             rows={4}
