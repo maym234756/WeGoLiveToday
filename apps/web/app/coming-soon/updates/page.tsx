@@ -110,22 +110,55 @@ export default function ComingSoonUpdates() {
         </div>
 
 
-        {/* ============================
-            FEEDBACK SECTION
-        ============================ */}
-        <div className="mb-12">
-          <h2 className="text-xl font-semibold text-white mb-2">💬 Help Shape This</h2>
+{/* ============================ 
+    FEEDBACK SECTION
+============================ */}
+<div className="mb-12">
+  <h2 className="text-xl font-semibold text-white mb-2">💬 Help Shape This</h2>
 
-          <p className="text-zinc-400 text-sm mb-2">
-            Are you a creator, viewer, or both? We'd love to hear from you.
-          </p>
+  <p className="text-zinc-400 text-sm mb-4">
+    Tell us what you'd love to see built. We'll get your feedback directly!
+  </p>
 
-          <p className="text-zinc-400 text-sm leading-relaxed">
-            Reply to the welcome email and tell us:
-            <br />– What you stream or enjoy watching  
-            <br />– One thing you wish today's platforms did better  
-          </p>
-        </div>
+  <form
+    onSubmit={async (e) => {
+      e.preventDefault();
+      const input = (document.getElementById('feedback') as HTMLTextAreaElement).value;
+
+      if (!input.trim()) return;
+
+      const res = await fetch('/api/send-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input }),
+      });
+
+      if (res.ok) {
+        alert('✅ Feedback sent! Thanks for helping shape this.');
+        (document.getElementById('feedback') as HTMLTextAreaElement).value = '';
+      } else {
+        alert('❌ Failed to send feedback. Please try again later.');
+      }
+    }}
+    className="space-y-4"
+  >
+    <textarea
+      id="feedback"
+      required
+      placeholder="Type your idea or suggestion here..."
+      rows={4}
+      className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+    />
+
+    <button
+      type="submit"
+      className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-md transition"
+    >
+      ✉️ Send Feedback
+    </button>
+  </form>
+</div>
+
 
 
         {/* ============================
