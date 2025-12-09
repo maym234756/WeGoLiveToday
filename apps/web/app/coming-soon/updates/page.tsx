@@ -1,3 +1,5 @@
+//apps/web/app/coming-soon/updates/page.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
