@@ -15,15 +15,18 @@ export default function ComingSoonUpdates() {
   const checkAccess = async () => {
     const storedName = localStorage.getItem('waitlist_name');
 
-    // If no name saved, redirect
-    if (!storedName) return router.push('/coming-soon/updates');
+    // If no name saved, redirect back to Coming Soon
+    if (!storedName) {
+      router.push('/coming-soon');
+      return;
+    }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Query Supabase for the stored name
+    // Query Supabase for a match by name
     const { data, error } = await supabase
       .from('notify_signups')
       .select('id, name')
@@ -34,7 +37,8 @@ export default function ComingSoonUpdates() {
       setAuthorized(true);
       setUserName(data.name || '');
     } else {
-      router.push('/coming-soon/updates');
+      // Redirect if name not found in Supabase
+      router.push('/coming-soon');
     }
 
     setLoading(false);
@@ -42,6 +46,7 @@ export default function ComingSoonUpdates() {
 
   checkAccess();
 }, [router]);
+
 
 
   if (loading || !authorized) return null;
