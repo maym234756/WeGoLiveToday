@@ -144,7 +144,7 @@ export default function ComingSoon() {
 
         <ol className="text-zinc-400 text-left text-base mb-6 space-y-2 list-decimal list-inside">
           <li>
-            <span className="font-semibold text-white">Enter your username</span> – We'll check if you're already on the list.
+            <span className="font-semibold text-white">Enter a username</span> – We'll check if you're already on the list.
           </li>
           <li>
             <span className="font-semibold text-white">Not on the list?</span> Add your username, email (optional), and a quick comment if you'd like. – Select Notify Me
