@@ -77,7 +77,7 @@ export default function ComingSoonUpdates() {
             <div>
               <h3 className="text-white font-medium mb-1">⏭ Up Next</h3>
               <ul className="list-disc list-inside space-y-1">
-                <li>Streamer Customization Page</li>
+                <li>Streamer customization page</li>
                 <li>Go‑live notifications</li>
                 <li>Creator analytics</li>
                 <li>Instant payment processing</li>
