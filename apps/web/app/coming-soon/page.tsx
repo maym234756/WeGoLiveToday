@@ -152,6 +152,9 @@ export default function ComingSoon() {
           <li>
             <span className="font-semibold text-white">You're in!</span> Once subscribed, an arrow ➡️ will appear giving you access to future updates.
           </li>
+          <li>
+            <span className="font-semibold text-white"></span> Add an email if you'd like ewmail notification on new release pages.
+          </li>
         </ol>
 
 
