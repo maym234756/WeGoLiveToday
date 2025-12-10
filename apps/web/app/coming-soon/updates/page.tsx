@@ -12,7 +12,7 @@ export default function ComingSoonUpdates() {
   const router = useRouter();
 
   // Dummy launch progress percent (you can make this dynamic)
-  const launchProgress = 72;
+  const launchProgress = 15;
 
   useEffect(() => {
     const checkAccess = async () => {
