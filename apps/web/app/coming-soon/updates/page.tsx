@@ -1,8 +1,11 @@
+// /app/coming-soon/updates/page.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import CountdownTimer from '@/components/CountdownTimer';
 
 export default function ComingSoonUpdates() {
   const [authorized, setAuthorized] = useState(false);
@@ -10,44 +13,34 @@ export default function ComingSoonUpdates() {
   const [userName, setUserName] = useState('');
   const router = useRouter();
 
-  // 🔍 Check Access + Load User Name
   useEffect(() => {
-  const checkAccess = async () => {
-    const storedName = localStorage.getItem('waitlist_name');
+    const checkAccess = async () => {
+      const storedName = localStorage.getItem('waitlist_name');
+      if (!storedName) return router.push('/coming-soon');
 
-    // If no name saved, redirect back to Coming Soon
-    if (!storedName) {
-      router.push('/coming-soon');
-      return;
-    }
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+      const { data, error } = await supabase
+        .from('notify_signups')
+        .select('id, name')
+        .eq('name', storedName)
+        .single();
 
-    // Query Supabase for a match by name
-    const { data, error } = await supabase
-      .from('notify_signups')
-      .select('id, name')
-      .eq('name', storedName)
-      .single();
+      if (data && !error) {
+        setAuthorized(true);
+        setUserName(data.name || '');
+      } else {
+        router.push('/coming-soon');
+      }
 
-    if (data && !error) {
-      setAuthorized(true);
-      setUserName(data.name || '');
-    } else {
-      // Redirect if name not found in Supabase
-      router.push('/coming-soon');
-    }
+      setLoading(false);
+    };
 
-    setLoading(false);
-  };
-
-  checkAccess();
-}, [router]);
-
-
+    checkAccess();
+  }, [router]);
 
   if (loading || !authorized) return null;
 
@@ -55,7 +48,7 @@ export default function ComingSoonUpdates() {
     <main className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white px-4 py-12 flex justify-center">
       <div className="max-w-3xl w-full bg-zinc-950 border border-zinc-800 rounded-lg shadow-xl p-8 animate-fade-in">
 
-        {/* 🎉 Personalized Welcome Section */}
+        {/* 🎉 Welcome Header */}
         <h1 className="text-3xl md:text-4xl font-bold text-emerald-400 mb-3">
           You’re in 🎉 {userName && <span className="text-white">Welcome, {userName}!</span>}
         </h1>
@@ -65,15 +58,11 @@ export default function ComingSoonUpdates() {
           This space gives you first-look access to what we're building — before anyone else sees it.
         </p>
 
-
-        {/* ============================
-            ROADMAP – NOW / NEXT / LATER
-        ============================ */}
+        {/* 🛠 ROADMAP */}
         <div className="mb-10">
           <h2 className="text-xl font-semibold text-white mb-3">🛠 Roadmap Overview</h2>
 
           <div className="grid md:grid-cols-3 gap-6 text-zinc-300 text-sm">
-
             <div>
               <h3 className="text-white font-medium mb-1">🔧 Building Now</h3>
               <ul className="list-disc list-inside space-y-1">
@@ -82,7 +71,6 @@ export default function ComingSoonUpdates() {
                 <li>Viewer watch page + chat</li>
               </ul>
             </div>
-
             <div>
               <h3 className="text-white font-medium mb-1">⏭ Up Next</h3>
               <ul className="list-disc list-inside space-y-1">
@@ -90,29 +78,22 @@ export default function ComingSoonUpdates() {
                 <li>Go‑live notifications</li>
                 <li>Creator analytics</li>
                 <li>Instant payment processing</li>
-
               </ul>
             </div>
-
             <div>
               <h3 className="text-white font-medium mb-1">💡 Later Ideas</h3>
               <ul className="list-disc list-inside space-y-1">
                 <li>Collab streams</li>
                 <li>Tipping & support tools</li>
-                <li>Schedule sctreaming</li>
+                <li>Scheduled streaming</li>
               </ul>
             </div>
-
           </div>
         </div>
 
-
-        {/* ============================
-            WHAT IS WGLT
-        ============================ */}
+        {/* 📺 What is WGLT */}
         <div className="mb-10">
           <h2 className="text-xl font-semibold text-white mb-2">📺 What is We Go Live Today?</h2>
-
           <p className="text-zinc-400 text-sm leading-relaxed">
             We Go Live Today is a streaming platform built around what’s happening <strong>right now</strong>.
             Instead of digging through old VODs, viewers discover live events happening today — with creators
@@ -120,61 +101,57 @@ export default function ComingSoonUpdates() {
           </p>
         </div>
 
+        {/* 💬 Feedback Form */}
+        <div className="mb-12">
+          <h2 className="text-xl font-semibold text-white mb-2">💬 Help Shape This</h2>
+          <p className="text-zinc-400 text-sm mb-4">
+            Tell us what you'd love to see built. We'll get your feedback directly!
+          </p>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const input = (document.getElementById('feedback') as HTMLTextAreaElement).value;
 
-{/* ============================ 
-    FEEDBACK SECTION
-============================ */}
-<div className="mb-12">
-  <h2 className="text-xl font-semibold text-white mb-2">💬 Help Shape This (Temporarily Unavailable)</h2>
+              if (!input.trim()) return;
 
-  <p className="text-zinc-400 text-sm mb-4">
-    Tell us what you'd love to see built. We'll get your feedback directly!
-  </p>
+              const res = await fetch('/api/send-feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: input }),
+              });
 
-  <form
-    onSubmit={async (e) => {
-      e.preventDefault();
-      const input = (document.getElementById('feedback') as HTMLTextAreaElement).value;
+              if (res.ok) {
+                alert('✅ Feedback sent! Thanks for helping shape this.');
+                (document.getElementById('feedback') as HTMLTextAreaElement).value = '';
+              } else {
+                alert('❌ Failed to send feedback. Please try again later.');
+              }
+            }}
+            className="space-y-4"
+          >
+            <textarea
+              id="feedback"
+              required
+              placeholder="Type your idea or suggestion here..."
+              rows={4}
+              className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <button
+              type="submit"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-md transition"
+            >
+              ✉️ Send Feedback
+            </button>
+          </form>
+        </div>
 
-      if (!input.trim()) return;
+        {/* ⏳ Countdown to Launch */}
+        <div className="mb-10 text-center">
+          <h2 className="text-xl font-semibold text-white mb-2">⏳ Countdown to New Update</h2>
+          <CountdownTimer targetDate="2025-12-31T00:00:00" />
+        </div>
 
-      const res = await fetch('/api/send-feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input }),
-      });
-
-      if (res.ok) {
-        alert('✅ Feedback sent! Thanks for helping shape this.');
-        (document.getElementById('feedback') as HTMLTextAreaElement).value = '';
-      } else {
-        alert('❌ Failed to send feedback. Please try again later.');
-      }
-    }}
-    className="space-y-4"
-  >
-    <textarea
-      id="feedback"
-      required
-      placeholder="Type your idea or suggestion here..."
-      rows={4}
-      className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-    />
-
-    <button
-      type="submit"
-      className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-md transition"
-    >
-      ✉️ Send Feedback
-    </button>
-  </form>
-</div>
-
-
-
-        {/* ============================
-            BACK BUTTON
-        ============================ */}
+        {/* ⬅️ Back Button */}
         <div className="flex justify-center">
           <button
             onClick={() => router.push('/coming-soon')}
