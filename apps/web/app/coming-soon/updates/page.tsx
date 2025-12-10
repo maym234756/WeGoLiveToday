@@ -1,5 +1,3 @@
-// /app/coming-soon/updates/page.tsx
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -12,6 +10,9 @@ export default function ComingSoonUpdates() {
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
   const router = useRouter();
+
+  // Dummy launch progress percent (you can make this dynamic)
+  const launchProgress = 72;
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -103,7 +104,7 @@ export default function ComingSoonUpdates() {
 
         {/* 💬 Feedback Form */}
         <div className="mb-12">
-          <h2 className="text-xl font-semibold text-white mb-2">💬 Help Shape This (Temporairly Unavailable)</h2>
+          <h2 className="text-xl font-semibold text-white mb-2">💬 Help Shape This (Temporarily Unavailable)</h2>
           <p className="text-zinc-400 text-sm mb-4">
             Tell us what you'd love to see built. We'll get your feedback directly!
           </p>
@@ -145,13 +146,25 @@ export default function ComingSoonUpdates() {
           </form>
         </div>
 
-        {/* ⏳ Countdown to Launch */}
-        <div className="mb-10 text-center">
+        {/* ⏳ Countdown Timer */}
+        <div className="mb-6 text-center">
           <h2 className="text-xl font-semibold text-white mb-2">⏳ Countdown to New Update</h2>
           <CountdownTimer targetDate="2025-12-31T00:00:00" />
         </div>
 
-        {/* ⬅️ Back Button */}
+        {/* 📊 Launch Progress Bar */}
+        <div className="mb-10">
+          <h2 className="text-sm text-zinc-400 mb-2 text-center">Progress Toward Launch</h2>
+          <div className="w-full bg-zinc-800 h-4 rounded-full overflow-hidden">
+            <div
+              className="bg-emerald-500 h-full transition-all duration-700 ease-in-out"
+              style={{ width: `${launchProgress}%` }}
+            ></div>
+          </div>
+          <p className="text-center text-sm mt-2 text-zinc-400">{launchProgress}% complete</p>
+        </div>
+
+        {/* Back Button */}
         <div className="flex justify-center">
           <button
             onClick={() => router.push('/coming-soon')}
@@ -160,7 +173,6 @@ export default function ComingSoonUpdates() {
             ← Back to Coming Soon
           </button>
         </div>
-
       </div>
     </main>
   );
