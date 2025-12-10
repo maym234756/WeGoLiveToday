@@ -103,7 +103,7 @@ export default function ComingSoonUpdates() {
 
         {/* 💬 Feedback Form */}
         <div className="mb-12">
-          <h2 className="text-xl font-semibold text-white mb-2">💬 Help Shape This</h2>
+          <h2 className="text-xl font-semibold text-white mb-2">💬 Help Shape This (Temporairly Unavailable)</h2>
           <p className="text-zinc-400 text-sm mb-4">
             Tell us what you'd love to see built. We'll get your feedback directly!
           </p>
