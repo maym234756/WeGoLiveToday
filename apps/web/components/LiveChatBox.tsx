@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 import Picker from '@emoji-mart/react';
 import ReactMarkdown from 'react-markdown';
 import Linkify from 'linkify-react';
@@ -18,8 +18,11 @@ export default function LiveChatBox() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const presenceChannelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('waitlist_name');
@@ -55,10 +58,32 @@ export default function LiveChatBox() {
       )
       .subscribe();
 
+    // ✅ PRESENCE CHANNEL
+    const presenceChannel = supabase.channel('chat-presence', {
+      config: {
+        presence: {
+          key: username || 'Guest',
+        },
+      },
+    });
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const users = Object.keys(state);
+        setOnlineUsers(users);
+      })
+      .subscribe();
+
+    presenceChannelRef.current = presenceChannel;
+
     return () => {
       supabase.removeChannel(channel);
+      if (presenceChannelRef.current) {
+        supabase.removeChannel(presenceChannelRef.current);
+      }
     };
-  }, []);
+  }, [username]);
 
   useEffect(() => {
     if (!isTyping) return;
@@ -136,7 +161,6 @@ export default function LiveChatBox() {
           </Linkify>
         </div>
 
-        {/* reactions UI (will add DB linkage later) */}
         <div className="mt-2 flex gap-3 text-lg opacity-70">
           <button className="hover:scale-125 transition">👍</button>
           <button className="hover:scale-125 transition">😂</button>
@@ -148,7 +172,7 @@ export default function LiveChatBox() {
 
   const renderChatPanel = () => (
     <>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-900 custom-scroll">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-900">
         {messages.map(renderMessage)}
         {isTyping && (
           <p className="text-xs text-zinc-400 italic px-1">Someone is typing...</p>
@@ -158,7 +182,7 @@ export default function LiveChatBox() {
 
       <div className="relative p-3 border-t border-zinc-700 bg-zinc-950 flex flex-col gap-2">
         {showEmojiPicker && (
-          <div className="absolute bottom-16 left-3 z-50 bg-zinc-900 rounded-lg shadow-xl border border-zinc-700 animate-in slide-in-from-bottom duration-300">
+          <div className="absolute bottom-16 left-3 z-50 bg-zinc-900 rounded-lg shadow-lg border border-zinc-700 animate-in slide-in-from-bottom duration-300">
             <div className="flex justify-end p-2">
               <button
                 onClick={() => setShowEmojiPicker(false)}
@@ -204,22 +228,22 @@ export default function LiveChatBox() {
 
   return (
     <>
-      {/* DESKTOP CHAT */}
+      {/* DESKTOP CHAT PANEL */}
       <div className="hidden md:flex fixed top-0 right-0 h-screen w-[380px] bg-zinc-900 border-l border-zinc-700 flex-col z-50">
         <div className="p-4 border-b border-zinc-700 text-white font-semibold text-lg bg-zinc-950 shadow flex justify-between">
           <span>💬 Live Chat</span>
-          <span className="text-emerald-400 text-xs">● Online</span>
+          <span className="text-emerald-400 text-xs">● {onlineUsers.length} Online</span>
         </div>
         {renderChatPanel()}
       </div>
 
-      {/* MOBILE BUTTON */}
+      {/* MOBILE CHAT TOGGLE */}
       <button
         onClick={() => {
           setIsMobileOpen(true);
           setTimeout(() => inputRef.current?.focus(), 300);
         }}
-        className="md:hidden fixed bottom-5 right-5 bg-emerald-500 text-white px-4 py-2 z-50 rounded-full shadow-lg"
+        className="md:hidden fixed bottom-5 right-5 z-50 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-full shadow-lg"
       >
         💬
       </button>
@@ -227,11 +251,12 @@ export default function LiveChatBox() {
       {/* MOBILE CHAT PANEL */}
       {isMobileOpen && (
         <div className="md:hidden fixed inset-0 bg-zinc-950 z-50 flex flex-col animate-in fade-in duration-200">
-          <div className="p-4 border-b border-zinc-700 flex items-center justify-between bg-zinc-900 shadow">
+          <div className="p-4 border-b border-zinc-700 flex justify-between items-center bg-zinc-900 shadow">
             <span className="text-white font-semibold text-lg">💬 Live Chat</span>
+            <span className="text-emerald-400 text-xs">● {onlineUsers.length} Online</span>
             <button
               onClick={() => setIsMobileOpen(false)}
-              className="text-zinc-400 hover:text-white"
+              className="text-zinc-400 hover:text-white text-sm"
             >
               Close
             </button>
