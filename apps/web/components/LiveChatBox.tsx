@@ -366,7 +366,7 @@ export default function LiveChatBox() {
       {isMobileOpen && (
         <div className="md:hidden fixed inset-0 bg-zinc-950 z-50 flex flex-col">
           <div className="p-4 border-b border-zinc-700 flex justify-between items-center bg-zinc-900 shadow">
-            <span className="text-white font-semibold text-lg">💬 Live Chat</span>
+            <span className="text-white font-semibold text-lg">💬 Live Chat - Drop Comment</span>
             <button onClick={() => setIsMobileOpen(false)} className="text-zinc-400 hover:text-white text-sm">
               Close
             </button>
