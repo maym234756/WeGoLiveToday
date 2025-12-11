@@ -14,7 +14,7 @@ type ChatRow = {
   username: string;
   message: unknown;
   created_at: string;
-  status?: 'pending' | 'sent' | 'failed'; // why: optimistic feedback
+  status?: 'pending' | 'sent' | 'failed';
 };
 
 type Reaction = { id: string; message_id: string; emoji: string; username: string };
@@ -23,6 +23,15 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+// ensure 'sent' stays a literal and avoid spread-widening
+const toSentRow = (r: any): ChatRow => ({
+  id: r.id as string,
+  username: r.username as string,
+  message: r.message,
+  created_at: r.created_at as string,
+  status: 'sent' as const, // keep literal type
+});
 
 export default function LiveChatBox() {
   const [messages, setMessages] = useState<ChatRow[]>([]);
@@ -35,11 +44,14 @@ export default function LiveChatBox() {
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
   const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
 
+  // polling backoff
   const baseMs = 4000;
   const maxMs = 30000;
   const factor = 1.6;
   const currentDelayRef = useRef<number>(baseMs);
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // list controls
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const atBottomRef = useRef(true);
 
@@ -65,12 +77,12 @@ export default function LiveChatBox() {
     catch { return String(v); }
   };
 
-  const mergeAndSort = (prev: ChatRow[], incoming: ChatRow[]) => {
+  const mergeAndSort = (prev: ChatRow[], incoming: ChatRow[]): ChatRow[] => {
     const map = new Map(prev.map((m) => [m.id, m]));
     for (const m of incoming) {
       const existing = map.get(m.id);
-      // why: keep optimistic fields but prefer server data
-      map.set(m.id, { ...existing, ...m, status: 'sent' });
+      // prefer server data; keep existing pending/failed only if incoming lacks status
+      map.set(m.id, { ...(existing ?? {}), ...m, status: m.status ?? existing?.status });
     }
     return Array.from(map.values()).sort(
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -84,7 +96,8 @@ export default function LiveChatBox() {
         .from('comingsoon_chat')
         .select('*')
         .order('created_at', { ascending: true });
-      const safe = ((data ?? []) as ChatRow[]).map((r) => ({ ...r, status: 'sent' }));
+
+      const safe: ChatRow[] = (data ?? []).map(toSentRow);
       setMessages(safe);
       setLastSeenAt(safe.length ? safe[safe.length - 1].created_at : null);
       requestAnimationFrame(scrollToBottom);
@@ -109,8 +122,8 @@ export default function LiveChatBox() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'comingsoon_chat' },
         (payload) => {
-          const row = payload.new as ChatRow;
-          setMessages((prev) => mergeAndSort(prev, [{ ...row, status: 'sent' }]));
+          const row = toSentRow(payload.new);
+          setMessages((prev) => mergeAndSort(prev, [row]));
           setLastSeenAt((prev) =>
             !prev || new Date(row.created_at) > new Date(prev) ? row.created_at : prev
           );
@@ -135,7 +148,7 @@ export default function LiveChatBox() {
     };
   }, []);
 
-  // Smart polling with backoff (unchanged)
+  // Smart polling with backoff (+ hidden-tab cheap count via API)
   useEffect(() => {
     const clearTimer = () => {
       if (pollTimeoutRef.current) {
@@ -176,7 +189,7 @@ export default function LiveChatBox() {
         .order('created_at', { ascending: true });
 
       if (!error && data && data.length > 0) {
-        const rows = (data as ChatRow[]).map((r) => ({ ...r, status: 'sent' }));
+        const rows: ChatRow[] = (data as any[]).map(toSentRow);
         setMessages((prev) => mergeAndSort(prev, rows));
         const newest = rows[rows.length - 1].created_at;
         setLastSeenAt((prev) =>
@@ -211,13 +224,12 @@ export default function LiveChatBox() {
     return () => clearTimeout(t);
   }, [input]);
 
-  // ---- OPTIMISTIC SEND ----
+  // OPTIMISTIC SEND
   const sendMessage = async () => {
-    const raw = input;
-    const trimmed = raw.trim();
+    const trimmed = input.trim();
     if (!trimmed) return;
 
-    const id = crypto.randomUUID(); // why: dedupe optimistic & realtime paths
+    const id = crypto.randomUUID(); // dedupe optimistic & realtime
     const optimistic: ChatRow = {
       id,
       username,
@@ -226,49 +238,47 @@ export default function LiveChatBox() {
       status: 'pending',
     };
 
-    setMessages((prev) => {
-      const next = [...prev, optimistic];
-      return next.sort(
+    setMessages((prev) =>
+      [...prev, optimistic].sort(
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
-    });
-    setLastSeenAt((prev) => optimistic.created_at);
+      )
+    );
+    setLastSeenAt(optimistic.created_at);
     setInput('');
     setShowEmojiPicker(false);
     if (atBottomRef.current) requestAnimationFrame(scrollToBottom);
 
-    // fire-and-forget insert; same id ensures merge without duplication
     supabase
       .from('comingsoon_chat')
       .insert({ id, username, message: trimmed, created_at: optimistic.created_at })
       .then(({ error }) => {
         if (error) {
-          // show failed state; user can retry
           setMessages((prev) =>
-            prev.map((m) => (m.id === id ? { ...m, status: 'failed' } : m))
+            prev.map((m) => (m.id === id ? { ...m, status: 'failed' as const } : m))
           );
         } else {
-          // success: realtime will mark as sent; fallback just in case
+          // realtime should confirm; still flip to sent as fallback
           setMessages((prev) =>
-            prev.map((m) => (m.id === id ? { ...m, status: 'sent' } : m))
+            prev.map((m) => (m.id === id ? { ...m, status: 'sent' as const } : m))
           );
         }
       });
   };
 
   const retrySend = async (msg: ChatRow) => {
-    setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, status: 'pending' } : m)));
+    setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, status: 'pending' as const } : m)));
     const { error } = await supabase
       .from('comingsoon_chat')
       .insert({ id: msg.id, username: msg.username, message: toMessageString(msg), created_at: msg.created_at });
     if (error) {
-      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, status: 'failed' } : m)));
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, status: 'failed' as const } : m)));
     } else {
-      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, status: 'sent' } : m)));
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, status: 'sent' as const } : m)));
     }
   };
 
   const addEmoji = (emoji: any) => {
+    // only append the native char(s)
     setInput((prev) => prev + (emoji?.native ?? ''));
     setIsTyping(true);
   };
@@ -334,7 +344,12 @@ export default function LiveChatBox() {
           </p>
           <p className="text-[10px] text-zinc-400 ml-auto flex items-center gap-2 flex-none">
             {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            {isPending && <span className="inline-block w-1.5 h-1.5 rounded-full bg-zinc-400 animate-pulse" title="Sending" />}
+            {isPending && (
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full bg-zinc-400 animate-pulse"
+                title="Sending"
+              />
+            )}
             {isFailed && (
               <button
                 onClick={() => retrySend(m)}
@@ -370,6 +385,11 @@ export default function LiveChatBox() {
           overscan={400}
           className="h-full p-4 flex flex-col items-stretch gap-4"
         />
+        {typingUsers.length > 0 && (
+          <p className="text-xs text-zinc-400 italic px-4 pb-2">
+            {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+          </p>
+        )}
       </div>
 
       <div
