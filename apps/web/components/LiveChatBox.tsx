@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import Picker from '@emoji-mart/react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm'; // GFM adds autolink literals (no Linkify needed)
+import remarkGfm from 'remark-gfm';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,6 +21,8 @@ export default function LiveChatBox() {
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [reactions, setReactions] = useState<Record<string, any[]>>({});
+  const [lastSeenAt, setLastSeenAt] = useState<string | null>(null); // why: incremental polling window
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,39 +30,53 @@ export default function LiveChatBox() {
     if (stored) setUsername(stored);
   }, []);
 
+  // --- Initial load + realtime subscriptions ---
   useEffect(() => {
-    const fetchMessages = async () => {
+    const fetchInitial = async () => {
       const { data } = await supabase
         .from('comingsoon_chat')
         .select('*')
         .order('created_at', { ascending: true });
 
-      setMessages(data || []);
+      const safe = data || [];
+      setMessages(safe);
+      setLastSeenAt(safe.length ? safe[safe.length - 1].created_at : null);
       scrollToBottom();
     };
 
     const fetchReactions = async () => {
       const { data } = await supabase.from('reactions').select('*');
-
       const grouped = (data || []).reduce((acc, r) => {
         if (!acc[r.message_id]) acc[r.message_id] = [];
         acc[r.message_id].push(r);
         return acc;
       }, {} as Record<string, any[]>);
-
       setReactions(grouped);
     };
 
-    fetchMessages();
+    fetchInitial();
     fetchReactions();
 
+    // Realtime primary path
     const messageSub = supabase
       .channel('chat-realtime')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'comingsoon_chat' },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new]);
+          setMessages((prev) => {
+            // why: dedupe if polling also got it
+            const map = new Map(prev.map((m) => [m.id, m]));
+            map.set(payload.new.id, payload.new);
+            const next = Array.from(map.values()).sort(
+              (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            );
+            return next;
+          });
+          setLastSeenAt((prev) => {
+            const ts = payload.new.created_at as string;
+            return !prev || new Date(ts) > new Date(prev) ? ts : prev;
+          });
           scrollToBottom();
         }
       )
@@ -81,6 +97,59 @@ export default function LiveChatBox() {
     };
   }, []);
 
+  // --- Polling fallback: fetch only new messages silently ---
+  useEffect(() => {
+    const startPolling = () => {
+      if (pollingRef.current) return;
+      pollingRef.current = setInterval(async () => {
+        // why: if we have nothing yet, skip; initial load covers it
+        const since = lastSeenAt;
+        if (!since) return;
+
+        const { data, error } = await supabase
+          .from('comingsoon_chat')
+          .select('*')
+          .gt('created_at', since)
+          .order('created_at', { ascending: true });
+
+        if (error || !data || data.length === 0) return;
+
+        setMessages((prev) => {
+          const map = new Map(prev.map((m) => [m.id, m]));
+          for (const m of data) map.set(m.id, m);
+          const next = Array.from(map.values()).sort(
+            (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+          return next;
+        });
+        setLastSeenAt((prev) => {
+          const newest = data[data.length - 1].created_at as string;
+          return !prev || new Date(newest) > new Date(prev) ? newest : prev;
+        });
+        scrollToBottom();
+      }, 4000);
+    };
+
+    const stopPolling = () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+
+    // Start immediately if page visible
+    if (!document.hidden) startPolling();
+
+    // Pause when tab hidden (save resources); resume on focus
+    const onVisibility = () => (document.hidden ? stopPolling() : startPolling());
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [lastSeenAt]);
+
   useEffect(() => {
     if (!isTyping) return;
     const timeout = setTimeout(() => setIsTyping(false), 2000);
@@ -93,18 +162,15 @@ export default function LiveChatBox() {
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-
     await supabase.from('comingsoon_chat').insert({
       username,
-      message: input.trim(), // keep stored as string
+      message: input.trim(),
     });
-
     setInput('');
     setShowEmojiPicker(false);
   };
 
   const addEmoji = (emoji: any) => {
-    // why: emoji-mart returns rich object; we only store the native char(s)
     setInput((prev) => prev + (emoji?.native ?? ''));
     setIsTyping(true);
   };
@@ -132,23 +198,16 @@ export default function LiveChatBox() {
     if (existing) {
       await supabase.from('reactions').delete().match({ id: existing.id });
     } else {
-      await supabase.from('reactions').insert({
-        message_id: messageId,
-        emoji,
-        username,
-      });
+      await supabase.from('reactions').insert({ message_id: messageId, emoji, username });
     }
   };
 
-  // why: force any DB shape to a safe markdown string
   const toMessageString = (m: any): string => {
     if (typeof m?.message === 'string') return m.message;
     if (typeof m?.message?.children === 'string') return m.message.children;
     if (m?.message == null) return '';
     try {
-      return typeof m.message === 'object'
-        ? JSON.stringify(m.message)
-        : String(m.message);
+      return typeof m.message === 'object' ? JSON.stringify(m.message) : String(m.message);
     } catch {
       return String(m.message);
     }
@@ -179,7 +238,6 @@ export default function LiveChatBox() {
 
   const renderMessage = (m: any) => {
     const messageText = toMessageString(m);
-
     return (
       <div
         key={m.id}
@@ -189,19 +247,13 @@ export default function LiveChatBox() {
           <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold uppercase">
             {m.username?.charAt(0)}
           </div>
-          <p className={`text-xs font-semibold ${getColor(m.username ?? '')}`}>
-            {m.username}
-          </p>
+          <p className={`text-xs font-semibold ${getColor(m.username ?? '')}`}>{m.username}</p>
           <p className="text-[10px] text-zinc-400 ml-auto">
-            {new Date(m.created_at).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
+            {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
 
         <div className="text-white text-sm whitespace-pre-line">
-          {/* IMPORTANT: pass a plain string to ReactMarkdown; let GFM autolink */}
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {messageText ?? ''}
           </ReactMarkdown>
@@ -275,9 +327,7 @@ export default function LiveChatBox() {
       <div className="hidden md:flex fixed top-0 right-0 h-screen w-[375px] bg-zinc-900 border-l border-zinc-700 flex-col z-50">
         <div className="p-4 border-b border-zinc-700 text-white font-semibold text-lg bg-zinc-950 shadow flex items-center justify-between">
           💬 Live Chat
-          <span className="text-emerald-400 text-xs">
-            ● {typingUsers.length + 1} Online
-          </span>
+          <span className="text-emerald-400 text-xs">● {typingUsers.length + 1} Online</span>
         </div>
         {renderChatPanel()}
       </div>
