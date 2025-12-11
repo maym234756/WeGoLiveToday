@@ -9,7 +9,14 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
-type ChatRow = { id: string; username: string; message: unknown; created_at: string };
+type ChatRow = {
+  id: string;
+  username: string;
+  message: unknown;
+  created_at: string;
+  status?: 'pending' | 'sent' | 'failed'; // why: optimistic feedback
+};
+
 type Reaction = { id: string; message_id: string; emoji: string; username: string };
 
 const supabase = createClient(
@@ -23,7 +30,7 @@ export default function LiveChatBox() {
   const [username, setUsername] = useState('');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [typingUsers] = useState<string[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
   const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
@@ -60,20 +67,24 @@ export default function LiveChatBox() {
 
   const mergeAndSort = (prev: ChatRow[], incoming: ChatRow[]) => {
     const map = new Map(prev.map((m) => [m.id, m]));
-    for (const m of incoming) map.set(m.id, m);
+    for (const m of incoming) {
+      const existing = map.get(m.id);
+      // why: keep optimistic fields but prefer server data
+      map.set(m.id, { ...existing, ...m, status: 'sent' });
+    }
     return Array.from(map.values()).sort(
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
   };
 
-  // Initial load + realtime
+  // Initial data + realtime
   useEffect(() => {
     const fetchInitial = async () => {
       const { data } = await supabase
         .from('comingsoon_chat')
         .select('*')
         .order('created_at', { ascending: true });
-      const safe = (data ?? []) as ChatRow[];
+      const safe = ((data ?? []) as ChatRow[]).map((r) => ({ ...r, status: 'sent' }));
       setMessages(safe);
       setLastSeenAt(safe.length ? safe[safe.length - 1].created_at : null);
       requestAnimationFrame(scrollToBottom);
@@ -99,7 +110,7 @@ export default function LiveChatBox() {
         { event: 'INSERT', schema: 'public', table: 'comingsoon_chat' },
         (payload) => {
           const row = payload.new as ChatRow;
-          setMessages((prev) => mergeAndSort(prev, [row]));
+          setMessages((prev) => mergeAndSort(prev, [{ ...row, status: 'sent' }]));
           setLastSeenAt((prev) =>
             !prev || new Date(row.created_at) > new Date(prev) ? row.created_at : prev
           );
@@ -124,7 +135,7 @@ export default function LiveChatBox() {
     };
   }, []);
 
-  // Smart polling with backoff (+ hidden-tab cheap count via API)
+  // Smart polling with backoff (unchanged)
   useEffect(() => {
     const clearTimer = () => {
       if (pollTimeoutRef.current) {
@@ -155,7 +166,7 @@ export default function LiveChatBox() {
             );
             return scheduleNext(currentDelayRef.current);
           }
-        } catch {/* ignore */}
+        } catch { /* ignore */ }
       }
 
       const { data, error } = await supabase
@@ -165,7 +176,7 @@ export default function LiveChatBox() {
         .order('created_at', { ascending: true });
 
       if (!error && data && data.length > 0) {
-        const rows = data as ChatRow[];
+        const rows = (data as ChatRow[]).map((r) => ({ ...r, status: 'sent' }));
         setMessages((prev) => mergeAndSort(prev, rows));
         const newest = rows[rows.length - 1].created_at;
         setLastSeenAt((prev) =>
@@ -200,11 +211,61 @@ export default function LiveChatBox() {
     return () => clearTimeout(t);
   }, [input]);
 
+  // ---- OPTIMISTIC SEND ----
   const sendMessage = async () => {
-    if (!input.trim()) return;
-    await supabase.from('comingsoon_chat').insert({ username, message: input.trim() });
+    const raw = input;
+    const trimmed = raw.trim();
+    if (!trimmed) return;
+
+    const id = crypto.randomUUID(); // why: dedupe optimistic & realtime paths
+    const optimistic: ChatRow = {
+      id,
+      username,
+      message: trimmed,
+      created_at: new Date().toISOString(),
+      status: 'pending',
+    };
+
+    setMessages((prev) => {
+      const next = [...prev, optimistic];
+      return next.sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    });
+    setLastSeenAt((prev) => optimistic.created_at);
     setInput('');
     setShowEmojiPicker(false);
+    if (atBottomRef.current) requestAnimationFrame(scrollToBottom);
+
+    // fire-and-forget insert; same id ensures merge without duplication
+    supabase
+      .from('comingsoon_chat')
+      .insert({ id, username, message: trimmed, created_at: optimistic.created_at })
+      .then(({ error }) => {
+        if (error) {
+          // show failed state; user can retry
+          setMessages((prev) =>
+            prev.map((m) => (m.id === id ? { ...m, status: 'failed' } : m))
+          );
+        } else {
+          // success: realtime will mark as sent; fallback just in case
+          setMessages((prev) =>
+            prev.map((m) => (m.id === id ? { ...m, status: 'sent' } : m))
+          );
+        }
+      });
+  };
+
+  const retrySend = async (msg: ChatRow) => {
+    setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, status: 'pending' } : m)));
+    const { error } = await supabase
+      .from('comingsoon_chat')
+      .insert({ id: msg.id, username: msg.username, message: toMessageString(msg), created_at: msg.created_at });
+    if (error) {
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, status: 'failed' } : m)));
+    } else {
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, status: 'sent' } : m)));
+    }
   };
 
   const addEmoji = (emoji: any) => {
@@ -253,9 +314,17 @@ export default function LiveChatBox() {
 
   const renderMessage = (m: ChatRow): ReactNode => {
     const messageText = toMessageString(m);
+    const isPending = m.status === 'pending';
+    const isFailed = m.status === 'failed';
+
     return (
-      <div className="max-w-[92%] md:max-w-[85%] bg-zinc-800 px-4 py-3 rounded-lg border border-zinc-700 shadow-sm">
-        {/* header: prevent overflow on small screens */}
+      <div
+        className={[
+          'max-w-[92%] md:max-w-[85%] bg-zinc-800 px-4 py-3 rounded-lg border shadow-sm',
+          isFailed ? 'border-red-500' : 'border-zinc-700',
+          isPending ? 'opacity-60' : '',
+        ].join(' ')}
+      >
         <div className="flex items-center gap-2 mb-1 min-w-0">
           <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold uppercase flex-none">
             {m.username?.[0] ?? '?'}
@@ -263,12 +332,21 @@ export default function LiveChatBox() {
           <p className={`text-xs font-semibold ${getColor(m.username ?? '')} truncate max-w-[50%]`}>
             {m.username}
           </p>
-          <p className="text-[10px] text-zinc-400 ml-auto flex-none">
+          <p className="text-[10px] text-zinc-400 ml-auto flex items-center gap-2 flex-none">
             {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {isPending && <span className="inline-block w-1.5 h-1.5 rounded-full bg-zinc-400 animate-pulse" title="Sending" />}
+            {isFailed && (
+              <button
+                onClick={() => retrySend(m)}
+                className="text-red-400 hover:text-red-300 text-[10px] underline"
+                title="Retry send"
+              >
+                Retry
+              </button>
+            )}
           </p>
         </div>
 
-        {/* body: wrap long words/links/emojis nicely */}
         <div className="text-white text-sm whitespace-pre-wrap break-words hyphens-auto leading-relaxed">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{messageText}</ReactMarkdown>
         </div>
@@ -292,16 +370,12 @@ export default function LiveChatBox() {
           overscan={400}
           className="h-full p-4 flex flex-col items-stretch gap-4"
         />
-        {typingUsers.length > 0 && (
-          <p className="text-xs text-zinc-400 italic px-4 pb-2">
-            {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
-          </p>
-        )}
       </div>
 
-      {/* input: safe-area padding for iOS, no overflow */}
-      <div className="relative p-3 border-t border-zinc-700 bg-zinc-950 flex flex-col gap-2"
-           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}>
+      <div
+        className="relative p-3 border-t border-zinc-700 bg-zinc-950 flex flex-col gap-2"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+      >
         {showEmojiPicker && (
           <div className="absolute bottom-16 left-3 z-50 bg-zinc-900 rounded-lg shadow-lg border border-zinc-700">
             <div className="flex justify-end p-2">
@@ -349,7 +423,7 @@ export default function LiveChatBox() {
       <div className="hidden md:flex fixed top-0 right-0 h-screen w-[375px] bg-zinc-900 border-l border-zinc-700 flex-col z-50">
         <div className="p-4 border-b border-zinc-700 text-white font-semibold text-lg bg-zinc-950 shadow flex items-center justify-between">
           💬 Live Chat
-          <span className="text-emerald-400 text-xs">● {typingUsers.length + 1} Online</span>
+          <span className="text-emerald-400 text-xs">● 1+ Online</span>
         </div>
         {renderChatPanel()}
       </div>
