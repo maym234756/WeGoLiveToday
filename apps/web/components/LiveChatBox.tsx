@@ -123,10 +123,20 @@ export default function LiveChatBox() {
 
       <div className="relative p-3 border-t border-zinc-700 bg-zinc-950 flex flex-col gap-2">
         {showEmojiPicker && (
-          <div className="absolute bottom-16 left-3 z-50">
-            <Picker onEmojiSelect={addEmoji} theme="dark" />
-          </div>
-        )}
+  <div className="absolute bottom-16 left-3 z-50 bg-zinc-900 rounded-lg shadow-lg border border-zinc-700">
+    <div className="flex justify-end p-2">
+      <button
+        onClick={() => setShowEmojiPicker(false)}
+        className="text-zinc-400 hover:text-white text-sm"
+        title="Close emoji picker"
+      >
+        ❌
+      </button>
+    </div>
+    <Picker onEmojiSelect={addEmoji} theme="dark" />
+  </div>
+)}
+
         <div className="flex gap-2">
           <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
