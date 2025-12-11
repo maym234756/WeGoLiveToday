@@ -169,7 +169,8 @@ export default function LiveChatBox() {
             onClick={() => toggleReaction(messageId, emoji)}
             className="bg-zinc-700 text-white px-2 py-1 text-xs rounded-full hover:bg-zinc-600"
           >
-            {emoji} {count}
+            {String(emoji)} {Number(count)}
+
           </button>
         ))}
       </div>
