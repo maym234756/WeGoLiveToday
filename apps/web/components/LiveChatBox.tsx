@@ -13,6 +13,7 @@ const supabase = createClient(
 
 export default function LiveChatBox() {
   const [messages, setMessages] = useState<any[]>([]);
+  const [reactions, setReactions] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [username, setUsername] = useState('');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -37,12 +38,21 @@ export default function LiveChatBox() {
         .order('created_at', { ascending: true });
 
       setMessages(data || []);
-      scrollToBottom();
+    };
+
+    const fetchReactions = async () => {
+      const { data } = await supabase
+        .from('reactions')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      setReactions(data || []);
     };
 
     fetchMessages();
+    fetchReactions();
 
-    const channel = supabase
+    const messageChannel = supabase
       .channel('chat-realtime')
       .on(
         'postgres_changes',
@@ -58,7 +68,25 @@ export default function LiveChatBox() {
       )
       .subscribe();
 
-    // ✅ PRESENCE CHANNEL
+    const reactionsChannel = supabase
+      .channel('chat-reactions')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'reactions' },
+        (payload) => {
+          // Handle both INSERT and DELETE for real-time sync
+          setReactions((prev) => {
+            if (payload.eventType === 'INSERT') {
+              return [...prev, payload.new];
+            } else if (payload.eventType === 'DELETE') {
+              return prev.filter((r) => r.id !== payload.old.id);
+            }
+            return prev;
+          });
+        }
+      )
+      .subscribe();
+
     const presenceChannel = supabase.channel('chat-presence', {
       config: {
         presence: {
@@ -78,7 +106,8 @@ export default function LiveChatBox() {
     presenceChannelRef.current = presenceChannel;
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messageChannel);
+      supabase.removeChannel(reactionsChannel);
       if (presenceChannelRef.current) {
         supabase.removeChannel(presenceChannelRef.current);
       }
@@ -112,6 +141,22 @@ export default function LiveChatBox() {
     setIsTyping(true);
   };
 
+  const toggleReaction = async (messageId: number, emoji: string) => {
+    const existing = reactions.find(
+      (r) => r.message_id === messageId && r.username === username && r.emoji === emoji
+    );
+
+    if (existing) {
+      await supabase.from('reactions').delete().eq('id', existing.id);
+    } else {
+      await supabase.from('reactions').insert({
+        message_id: messageId,
+        username: username || 'Guest',
+        emoji,
+      });
+    }
+  };
+
   const getColor = (name: string) => {
     const colors = [
       'text-red-400',
@@ -130,6 +175,20 @@ export default function LiveChatBox() {
 
   const renderMessage = (m: any) => {
     const isSelf = m.username === username;
+
+    // Group reactions for this message
+    const messageReactions = reactions
+      .filter((r) => r.message_id === m.id)
+      .reduce((acc: Record<string, { count: number; reactedByUser: boolean }>, r) => {
+        if (!acc[r.emoji]) {
+          acc[r.emoji] = { count: 0, reactedByUser: false };
+        }
+        acc[r.emoji].count++;
+        if (r.username === username) {
+          acc[r.emoji].reactedByUser = true;
+        }
+        return acc;
+      }, {});
 
     return (
       <div
@@ -161,10 +220,20 @@ export default function LiveChatBox() {
           </Linkify>
         </div>
 
-        <div className="mt-2 flex gap-3 text-lg opacity-70">
-          <button className="hover:scale-125 transition">👍</button>
-          <button className="hover:scale-125 transition">😂</button>
-          <button className="hover:scale-125 transition">❤️</button>
+        {/* Persistent Reactions */}
+        <div className="mt-2 flex gap-2 flex-wrap text-sm">
+          {Object.entries(messageReactions).map(([emoji, { count, reactedByUser }]) => (
+            <button
+              key={emoji}
+              onClick={() => toggleReaction(m.id, emoji)}
+              className={`px-2 py-1 rounded-full bg-zinc-700 border text-white flex items-center gap-1 ${
+                reactedByUser ? 'border-emerald-400' : 'border-transparent'
+              }`}
+            >
+              <span>{emoji}</span>
+              <span className="text-xs">{count}</span>
+            </button>
+          ))}
         </div>
       </div>
     );
@@ -237,7 +306,7 @@ export default function LiveChatBox() {
         {renderChatPanel()}
       </div>
 
-      {/* MOBILE CHAT TOGGLE */}
+      {/* MOBILE TOGGLE BUTTON */}
       <button
         onClick={() => {
           setIsMobileOpen(true);
