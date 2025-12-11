@@ -19,6 +19,7 @@ export default function LiveChatBox() {
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('waitlist_name');
@@ -40,14 +41,18 @@ export default function LiveChatBox() {
 
     const channel = supabase
       .channel('chat-realtime')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'comingsoon_chat',
-      }, (payload) => {
-        setMessages((prev) => [...prev, payload.new]);
-        scrollToBottom();
-      })
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'comingsoon_chat',
+        },
+        (payload) => {
+          setMessages((prev) => [...prev, payload.new]);
+          scrollToBottom();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -84,36 +89,66 @@ export default function LiveChatBox() {
 
   const getColor = (name: string) => {
     const colors = [
-      'text-red-400', 'text-green-400', 'text-blue-400', 'text-yellow-400',
-      'text-pink-400', 'text-purple-400', 'text-cyan-400', 'text-orange-400'
+      'text-red-400',
+      'text-green-400',
+      'text-blue-400',
+      'text-yellow-400',
+      'text-pink-400',
+      'text-purple-400',
+      'text-cyan-400',
+      'text-orange-400',
     ];
     let hash = 0;
     for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
     return colors[hash % colors.length];
   };
 
-  const renderMessage = (m: any) => (
-    <div key={m.id} className="bg-zinc-800 px-4 py-3 rounded-lg border border-zinc-700 shadow-sm">
-      <div className="flex items-center gap-2 mb-1">
-        <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold uppercase">
-          {m.username.charAt(0)}
+  const renderMessage = (m: any) => {
+    const isSelf = m.username === username;
+
+    return (
+      <div
+        key={m.id}
+        className={`px-4 py-3 rounded-lg border shadow-md max-w-[85%] transition-all duration-200 ${
+          isSelf
+            ? 'ml-auto bg-emerald-700/20 border-emerald-700'
+            : 'bg-zinc-800 border-zinc-700'
+        }`}
+      >
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold uppercase">
+            {m.username.charAt(0)}
+          </div>
+          <p className={`text-xs font-semibold ${getColor(m.username)}`}>
+            {isSelf ? 'You' : m.username}
+          </p>
+          <p className="text-[10px] text-zinc-400 ml-auto">
+            {new Date(m.created_at).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </p>
         </div>
-        <p className={`text-xs font-semibold ${getColor(m.username)}`}>{m.username}</p>
-        <p className="text-[10px] text-zinc-400 ml-auto">
-          {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </p>
+
+        <div className="text-white text-sm whitespace-pre-line">
+          <Linkify options={{ target: '_blank' }}>
+            <ReactMarkdown>{m.message}</ReactMarkdown>
+          </Linkify>
+        </div>
+
+        {/* reactions UI (will add DB linkage later) */}
+        <div className="mt-2 flex gap-3 text-lg opacity-70">
+          <button className="hover:scale-125 transition">👍</button>
+          <button className="hover:scale-125 transition">😂</button>
+          <button className="hover:scale-125 transition">❤️</button>
+        </div>
       </div>
-      <div className="text-white text-sm whitespace-pre-line">
-        <Linkify options={{ target: '_blank' }}>
-          <ReactMarkdown>{m.message}</ReactMarkdown>
-        </Linkify>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderChatPanel = () => (
     <>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-900">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-900 custom-scroll">
         {messages.map(renderMessage)}
         {isTyping && (
           <p className="text-xs text-zinc-400 italic px-1">Someone is typing...</p>
@@ -123,38 +158,39 @@ export default function LiveChatBox() {
 
       <div className="relative p-3 border-t border-zinc-700 bg-zinc-950 flex flex-col gap-2">
         {showEmojiPicker && (
-  <div className="absolute bottom-16 left-3 z-50 bg-zinc-900 rounded-lg shadow-lg border border-zinc-700">
-    <div className="flex justify-end p-2">
-      <button
-        onClick={() => setShowEmojiPicker(false)}
-        className="text-zinc-400 hover:text-white text-sm"
-        title="Close emoji picker"
-      >
-        ❌
-      </button>
-    </div>
-    <Picker onEmojiSelect={addEmoji} theme="dark" />
-  </div>
-)}
+          <div className="absolute bottom-16 left-3 z-50 bg-zinc-900 rounded-lg shadow-xl border border-zinc-700 animate-in slide-in-from-bottom duration-300">
+            <div className="flex justify-end p-2">
+              <button
+                onClick={() => setShowEmojiPicker(false)}
+                className="text-zinc-400 hover:text-white text-sm"
+              >
+                ❌
+              </button>
+            </div>
+            <Picker onEmojiSelect={addEmoji} theme="dark" />
+          </div>
+        )}
 
         <div className="flex gap-2">
           <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="text-white text-lg hover:opacity-80"
-            title="Emoji"
+            className="text-white text-2xl hover:scale-110 transition"
           >
             😊
           </button>
+
           <input
+            ref={inputRef}
             value={input}
             onChange={(e) => {
               setInput(e.target.value);
               setIsTyping(true);
             }}
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-            className="flex-1 px-3 py-2 rounded-md bg-zinc-800 text-white"
-            placeholder="Type a message or emoji..."
+            className="flex-1 px-3 py-2 rounded-md bg-zinc-800 text-white placeholder:text-zinc-400"
+            placeholder="Type a message..."
           />
+
           <button
             onClick={sendMessage}
             className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 rounded-md"
@@ -168,30 +204,34 @@ export default function LiveChatBox() {
 
   return (
     <>
-      {/* DESKTOP CHAT PANEL */}
-      <div className="hidden md:flex fixed top-0 right-0 h-screen w-[375px] bg-zinc-900 border-l border-zinc-700 flex-col z-50">
-        <div className="p-4 border-b border-zinc-700 text-white font-semibold text-lg bg-zinc-950 shadow">
-          💬 Live Chat
+      {/* DESKTOP CHAT */}
+      <div className="hidden md:flex fixed top-0 right-0 h-screen w-[380px] bg-zinc-900 border-l border-zinc-700 flex-col z-50">
+        <div className="p-4 border-b border-zinc-700 text-white font-semibold text-lg bg-zinc-950 shadow flex justify-between">
+          <span>💬 Live Chat</span>
+          <span className="text-emerald-400 text-xs">● Online</span>
         </div>
         {renderChatPanel()}
       </div>
 
-      {/* MOBILE TOGGLE BUTTON */}
+      {/* MOBILE BUTTON */}
       <button
-        onClick={() => setIsMobileOpen(true)}
-        className="md:hidden fixed bottom-5 right-5 z-50 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-full shadow-lg"
+        onClick={() => {
+          setIsMobileOpen(true);
+          setTimeout(() => inputRef.current?.focus(), 300);
+        }}
+        className="md:hidden fixed bottom-5 right-5 bg-emerald-500 text-white px-4 py-2 z-50 rounded-full shadow-lg"
       >
         💬
       </button>
 
       {/* MOBILE CHAT PANEL */}
       {isMobileOpen && (
-        <div className="md:hidden fixed inset-0 bg-zinc-950 z-50 flex flex-col">
-          <div className="p-4 border-b border-zinc-700 flex justify-between items-center bg-zinc-900 shadow">
+        <div className="md:hidden fixed inset-0 bg-zinc-950 z-50 flex flex-col animate-in fade-in duration-200">
+          <div className="p-4 border-b border-zinc-700 flex items-center justify-between bg-zinc-900 shadow">
             <span className="text-white font-semibold text-lg">💬 Live Chat</span>
             <button
               onClick={() => setIsMobileOpen(false)}
-              className="text-zinc-400 hover:text-white text-sm"
+              className="text-zinc-400 hover:text-white"
             >
               Close
             </button>
