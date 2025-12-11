@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import Picker from '@emoji-mart/react';
-import 'emoji-mart/css/emoji-mart.css';
 import ReactMarkdown from 'react-markdown';
 import Linkify from 'linkify-react';
 
