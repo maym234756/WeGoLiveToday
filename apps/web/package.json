@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@emoji-mart/react": "^1.1.1",
     "@headlessui/react": "^2.2.9",
     "@stripe/react-stripe-js": "^5.4.1",
     "@stripe/stripe-js": "^8.5.3",
@@ -19,6 +20,8 @@
     "@vercel/analytics": "^1.6.1",
     "clsx": "^2.1.1",
     "hls.js": "^1.6.15",
+    "linkify-react": "^4.3.2",
+    "linkifyjs": "^4.3.2",
     "mongoose": "^9.0.0",
     "next": "^14.2.33",
     "next-auth": "^4.24.13",
@@ -26,6 +29,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-icons": "^5.5.0",
+    "react-markdown": "^10.1.0",
     "react-tsparticles": "^2.12.2",
     "sonner": "^2.0.7",
     "stripe": "^20.0.0",
