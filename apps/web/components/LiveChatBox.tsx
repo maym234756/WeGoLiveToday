@@ -12,7 +12,7 @@ import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 type ChatRow = {
   id: string;
   username: string;
-  message: unknown;
+  message: string; // 👈 ⚠️
   created_at: string;
   status?: 'pending' | 'sent' | 'failed';
 };
