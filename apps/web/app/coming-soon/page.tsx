@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
-import LiveChatBox from '@/components/LiveChatBox'
+//import LiveChatBox from '@/components/LiveChatBox'
 
 export default function ComingSoon() {
   const router = useRouter();
