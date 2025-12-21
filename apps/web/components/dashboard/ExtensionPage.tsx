@@ -6,7 +6,7 @@ import {
   FiClock, FiCloud, FiCode, FiDatabase, FiDownload, FiExternalLink, FiFilter, FiFlag,
   FiGlobe, FiGrid, FiHeart, FiHelpCircle, FiInfo, FiLayers, FiLock, FiMonitor, FiPackage,
   FiPlus, FiRefreshCw, FiSearch, FiSettings, FiShield, FiStar, FiTag, FiTrash2, FiTrendingUp,
-  FiUpload, FiUsers, FiX, FiZap
+  FiUpload, FiUsers, FiX, FiZap, FiPlay
 } from 'react-icons/fi';
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
@@ -22,7 +22,9 @@ type Category =
   | 'Automation'
   | 'Overlays'
   | 'Accessibility'
-  | 'Developer';
+  | 'Developer'
+  | 'Audio';
+
 
 type Extension = {
   id: string;
@@ -599,7 +601,6 @@ export default function ExtensionsPage() {
               bodyClass="space-y-4"
             >
               <div className="grid grid-cols-2 gap-3">
-                <Labeled dev label="Extension name" value={devName} onChange={setDevName} />
                 <div>
                   <div className="text-sm text-zinc-400 mb-1">Scopes</div>
                   <div className="flex flex-wrap gap-2">
