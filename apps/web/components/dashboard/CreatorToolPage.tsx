@@ -338,7 +338,6 @@ function ABThumbnailCard() {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <div className="aspect-video bg-zinc-950 border border-zinc-800 rounded grid place-items-center text-zinc-600">A</div>
-          <LabeledInput label="Title A" value={a} onChange={setA} className="" />
         </div>
         <div>
           <div className="aspect-video bg-zinc-950 border border-zinc-800 rounded grid place-items-center text-zinc-600">B</div>
