@@ -29,5 +29,3 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Ignore coming-soon route
-apps/web/app/coming-soon/
