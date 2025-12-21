@@ -254,7 +254,6 @@ export default function ComingSoon() {
         </p>
       </div>
 
-
     </main>
   );
 }

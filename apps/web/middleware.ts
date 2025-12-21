@@ -15,12 +15,12 @@ export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname
 
   // ✅ 1. Protect /dashboard and /adult for signed-in users only
-  if ((path.startsWith('/dashboard') || path.startsWith('/adult')) && !session) {
-    const loginUrl = req.nextUrl.clone()
-    loginUrl.pathname = '/login'
-    loginUrl.searchParams.set('next', path)
-    return NextResponse.redirect(loginUrl)
-  }
+  // if ((path.startsWith('/dashboard') || path.startsWith('/adult')) && !session) {
+  //  const loginUrl = req.nextUrl.clone()
+  //  loginUrl.pathname = '/login'
+  //  loginUrl.searchParams.set('next', path)
+  //  return NextResponse.redirect(loginUrl)
+  // }
 
   // ✅ 2. Optional: Admin cookie-based protection
   if (path.startsWith('/admin')) {

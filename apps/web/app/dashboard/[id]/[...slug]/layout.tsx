@@ -1,4 +1,4 @@
-// apps/web/app/dashboard/[id]/layout.tsx
+// app/dashboard/layout.tsx
 import Sidebar from '@/components/dashboard/Sidebar';
 
 export default function DashboardLayout({
@@ -7,9 +7,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex w-full">
+    <div className="min-h-screen flex">
       <Sidebar />
-      <main className="flex-1 min-w-0 px-3 sm:px-4 py-4">{children}</main>
+      <main className="flex-1 page-pad px-3 sm:px-4">
+        {children}
+      </main>
     </div>
   );
 }

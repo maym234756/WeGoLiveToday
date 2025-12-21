@@ -146,6 +146,16 @@ export default function ComingSoonUpdates() {
           </form>
         </div>
 
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => router.push('/coming-soon/updates/decupdate')}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-md transition flex items-center gap-2"
+            >
+              View December Update <span className="text-lg">➡️</span>
+            </button>
+
+          </div>
+
         {/* ⏳ Countdown Timer */}
         <div className="mb-6 text-center">
           <h2 className="text-xl font-semibold text-white mb-2">⏳ Countdown to New Update</h2>
@@ -163,6 +173,7 @@ export default function ComingSoonUpdates() {
           </div>
           <p className="text-center text-sm mt-2 text-zinc-400">{launchProgress}% complete</p>
         </div>
+
 
         {/* Back Button */}
         <div className="flex justify-center">
