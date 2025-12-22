@@ -13,6 +13,7 @@ import KnowledgeBasePage from '@/components/dashboard/KnowledgeBasePage';
 import FollowersPage from '@/components/dashboard/FollowersPage';
 import ModeratorsPage from '@/components/dashboard/ModeratorsPage';
 import ChatPage from '@/components/dashboard/ChatPage';
+import RevenuePage from '@/components/dashboard/RevenuePage';
 
 export default function DashboardSubPage() {
   const params = useParams<{ slug?: string[] | string }>();
@@ -56,6 +57,27 @@ export default function DashboardSubPage() {
       case 'knowledge-base':
       case 'help':
         return <KnowledgeBasePage />;
+
+      /* ---------- Monetization subsections ---------- */
+      case 'monetization': {
+        switch (subSection) {
+          case 'revenue':
+            return <RevenuePage />;
+          case 'subs':
+            return <h1>🧾 Subs</h1>;
+          case 'tips':
+            return <h1>💸 Tips</h1>;
+          case 'sponsorships':
+            return <h1>🤝 Sponsorships</h1>;
+          default:
+            return (
+              <h1>
+                📁 Page not found: {section}
+                {subSection ? `/${subSection}` : ''}
+              </h1>
+            );
+        }
+      }
 
       /* ---------- My Group subsections ---------- */
       case 'community': {
