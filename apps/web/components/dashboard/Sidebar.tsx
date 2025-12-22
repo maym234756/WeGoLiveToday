@@ -3,8 +3,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { FiMenu, FiChevronDown } from 'react-icons/fi';
+import { useEffect, useMemo, useState } from 'react';
+import { FiChevronDown, FiMenu } from 'react-icons/fi';
 import { usePathname } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
@@ -26,10 +26,10 @@ export default function Sidebar() {
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const [userId, setUserId] = useState<string | null>(null);
 
-  // ✅ Mobile overlay open/close (slides in/out)
+  // Mobile overlay open/close (slides in/out)
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // 🔐 Fetch user ID
+  // Fetch user ID
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getSession();
@@ -38,12 +38,12 @@ export default function Sidebar() {
     getUser();
   }, [supabase]);
 
-  // ✅ Auto-close mobile sidebar on route change
+  // Auto-close mobile sidebar on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
-  // ✅ Prevent background scroll while mobile sidebar is open
+  // Prevent background scroll while mobile sidebar is open
   useEffect(() => {
     if (!mobileOpen) return;
     const prev = document.body.style.overflow;
@@ -57,104 +57,115 @@ export default function Sidebar() {
     setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
-  // 🧭 Build nav items AFTER userId exists
-  const navItems: NavItem[] = [
-    { label: 'Home', href: `/dashboard/${userId}`, icon: '🏠' },
+  const navItems: NavItem[] = useMemo(() => {
+    if (!userId) return [];
 
-    { label: 'Alerts', href: `/dashboard/${userId}/alerts`, icon: '🔔', badge: 'NEW' },
-    { label: 'KPI', href: `/dashboard/${userId}/analytics`, icon: '📈' },
+    return [
+      { label: 'Home', href: `/dashboard/${userId}`, icon: '🏠' },
 
-    {
-      label: 'My Group',
-      children: [
-        { label: 'Chat', href: `/dashboard/${userId}/community/chat` },
-        { label: 'Followers', href: `/dashboard/${userId}/community/followers` },
-        { label: 'Moderators', href: `/dashboard/${userId}/community/mods` },
-      ],
-    },
+      { label: 'Alerts', href: `/dashboard/${userId}/alerts`, icon: '🔔', badge: 'NEW' },
+      { label: 'KPI', href: `/dashboard/${userId}/analytics`, icon: '📈' },
 
-    {
-      label: 'My Content',
-      children: [
-        { label: 'My Streams', href: `/dashboard/${userId}/content/streams` },
-        { label: 'Past Broadcasts', href: `/dashboard/${userId}/content/vods` },
-        { label: 'Clips', href: `/dashboard/${userId}/content/clips` },
-      ],
-    },
+      {
+        label: 'My Group',
+        icon: '📁',
+        children: [
+          { label: 'Chat', href: `/dashboard/${userId}/community/chat` },
+          { label: 'Followers', href: `/dashboard/${userId}/community/followers` },
+          { label: 'Moderators', href: `/dashboard/${userId}/community/mods` },
+        ],
+      },
 
-    {
-      label: 'Monetization',
-      icon: '💰',
-      badge: '',
-      children: [
-        { label: 'Revenue', href: `/dashboard/${userId}/monetization/revenue` },
-        { label: 'Subs', href: `/dashboard/${userId}/monetization/subscribers` },
-        { label: 'Tips', href: `/dashboard/${userId}/monetization/tips` },
-        { label: 'Sponsorships', href: `/dashboard/${userId}/monetization/sponsors` },
-      ],
-    },
+      {
+        label: 'My Content',
+        icon: '📁',
+        children: [
+          { label: 'My Streams', href: `/dashboard/${userId}/content/streams` },
+          { label: 'Past Broadcasts', href: `/dashboard/${userId}/content/vods` },
+          { label: 'Clips', href: `/dashboard/${userId}/content/clips` },
+        ],
+      },
 
-    {
-      label: 'Channel Settings',
-      href: `/dashboard/${userId}/moderation`,
-      icon: '⚙️',
-      badge: '',
-    },
+      {
+        label: 'Monetization',
+        icon: '💰',
+        children: [
+          { label: 'Revenue', href: `/dashboard/${userId}/monetization/revenue` },
+          { label: 'Subs', href: `/dashboard/${userId}/monetization/subscribers` },
+          { label: 'Tips', href: `/dashboard/${userId}/monetization/tips` },
+          { label: 'Sponsorships', href: `/dashboard/${userId}/monetization/sponsors` },
+        ],
+      },
 
-    {
-      label: 'Viewer Rewards',
-      href: `/dashboard/${userId}/rewards`,
-      icon: '🎁',
-      badge: '',
-    },
+      {
+        label: 'Channel Settings',
+        href: `/dashboard/${userId}/moderation`,
+        icon: '⚙️',
+      },
 
-    {
-      label: '1 on 1',
-      href: `/dashboard/${userId}/stream-together`,
-      icon: '🤝',
-      badge: 'NEW',
-    },
+      {
+        label: 'Viewer Rewards',
+        href: `/dashboard/${userId}/rewards`,
+        icon: '🎁',
+      },
 
-    {
-      label: 'Creator Tools',
-      href: `/dashboard/${userId}/tools`,
-      icon: '🛠️',
-    },
+      {
+        label: '1 on 1',
+        href: `/dashboard/${userId}/stream-together`,
+        icon: '🤝',
+        badge: 'NEW',
+      },
 
-    {
-      label: 'Store',
-      href: `/dashboard/${userId}/extensions`,
-      icon: '🧩',
-    },
+      {
+        label: 'Creator Tools',
+        href: `/dashboard/${userId}/tools`,
+        icon: '🛠️',
+      },
 
-    {
-      label: 'Settings',
-      children: [
-        { label: 'Account', href: `/dashboard/${userId}/settings/account` },
-        { label: 'Stream Settings', href: `/dashboard/${userId}/settings/stream` },
-        { label: 'Security', href: `/dashboard/${userId}/settings/security` },
-      ],
-    },
+      {
+        label: 'Store',
+        href: `/dashboard/${userId}/extensions`,
+        icon: '🧩',
+      },
 
-    {
-      label: 'Knowledge Base',
-      href: 'https://creatorcamp.example.com',
-      icon: '📚',
-      external: true,
-    },
+      {
+        label: 'Settings',
+        icon: '🧰',
+        children: [
+          { label: 'Account', href: `/dashboard/${userId}/settings/account` },
+          { label: 'Stream Settings', href: `/dashboard/${userId}/settings/stream` },
+          { label: 'Security', href: `/dashboard/${userId}/settings/security` },
+        ],
+      },
 
-    {
-      label: 'Safety Center',
-      href: `/dashboard/${userId}/safety`,
-      icon: '🛡️',
-    },
-  ];
+      // ✅ FIX: route internally so it populates within the dashboard
+      {
+        label: 'Knowledge Base',
+        href: `/dashboard/${userId}/knowledge-base`,
+        icon: '📚',
+      },
+
+      {
+        label: 'Safety Center',
+        href: `/dashboard/${userId}/safety`,
+        icon: '🛡️',
+      },
+
+      // (Optional external example if you want to keep an external docs link)
+      // {
+      //   label: 'Creator Camp (External)',
+      //   href: 'https://creatorcamp.example.com',
+      //   icon: '🌐',
+      //   external: true,
+      // },
+    ];
+  }, [userId]);
 
   if (!userId) return null;
 
   return (
     <>
-      {/* ✅ Mobile open button (only when closed) */}
+      {/* Mobile open button (only when closed) */}
       {!mobileOpen && (
         <button
           aria-label="Open sidebar"
@@ -165,7 +176,7 @@ export default function Sidebar() {
         </button>
       )}
 
-      {/* ✅ Mobile backdrop (tap to close) */}
+      {/* Mobile backdrop (tap to close) */}
       {mobileOpen && (
         <button
           aria-label="Close sidebar"
@@ -187,9 +198,9 @@ export default function Sidebar() {
           pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]
         `}
       >
-        {/* ✅ Make interior scrollable correctly */}
+        {/* Interior layout (makes scrolling reliable on phone + rotation) */}
         <div className="flex h-full min-h-0 flex-col px-4 py-6">
-          {/* ✅ Top controls */}
+          {/* Top controls */}
           <div className="flex items-center justify-between mb-4">
             {/* Mobile close (inside sidebar) */}
             <button
@@ -210,30 +221,54 @@ export default function Sidebar() {
             </button>
           </div>
 
-          {/* ✅ Scroll container (this fixes phone scrolling + rotation) */}
+          {/* Scroll container */}
           <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 space-y-2">
             {navItems.map((item) => (
               <div key={item.label}>
                 <div className="flex items-center justify-between">
-                  <Link
-                    href={item.href || '#'}
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 ${
-                      pathname === item.href ? 'bg-zinc-800 text-emerald-400' : ''
-                    }`}
-                  >
-                    <span className="text-lg">{item.icon || '📁'}</span>
-                    {!collapsed && (
-                      <>
-                        <span>{item.label}</span>
-                        {item.badge && (
-                          <span className="ml-auto text-xs bg-pink-500 text-white rounded-full px-2">
-                            {item.badge}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </Link>
+                  {item.external ? (
+                    <a
+                      href={item.href || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setMobileOpen(false)}
+                      className={`flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 ${
+                        pathname === item.href ? 'bg-zinc-800 text-emerald-400' : ''
+                      }`}
+                    >
+                      <span className="text-lg">{item.icon || '📁'}</span>
+                      {!collapsed && (
+                        <>
+                          <span className="truncate">{item.label}</span>
+                          {item.badge && (
+                            <span className="ml-auto text-xs bg-pink-500 text-white rounded-full px-2">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </a>
+                  ) : (
+                    <Link
+                      href={item.href || '#'}
+                      onClick={() => setMobileOpen(false)}
+                      className={`flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 ${
+                        pathname === item.href ? 'bg-zinc-800 text-emerald-400' : ''
+                      }`}
+                    >
+                      <span className="text-lg">{item.icon || '📁'}</span>
+                      {!collapsed && (
+                        <>
+                          <span className="truncate">{item.label}</span>
+                          {item.badge && (
+                            <span className="ml-auto text-xs bg-pink-500 text-white rounded-full px-2">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </Link>
+                  )}
 
                   {!collapsed && item.children && (
                     <button
