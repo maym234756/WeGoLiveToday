@@ -258,7 +258,6 @@ function makeEnvelope<T>(value: T, version?: number, ttlMs?: number): StoredEnve
    │ 4) UI PRIMITIVES                                                           │
    ╰────────────────────────────────────────────────────────────────────────────╯ */
 
-
 /* tiny class helper (optional) */
 const cx = (...c: Array<string | false | null | undefined>) => c.filter(Boolean).join(' ');
 
@@ -280,17 +279,29 @@ function Card({
   bodyClass?: string;
 }) {
   return (
-    <section className={cx('bg-zinc-900 border border-zinc-800 rounded-xl', className)}>
+    <section className={cx('bg-zinc-900 border border-zinc-800 rounded-xl min-w-0', className)}>
       {(title || icon || right) && (
-        <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 text-zinc-300">
-          <div className="flex items-center gap-2">
+        <header
+          className={cx(
+            'px-4 py-3 border-b border-zinc-800 text-zinc-300 min-w-0',
+            // Mobile: allow wrapping; Desktop: inline
+            'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'
+          )}
+        >
+          <div className="flex items-center gap-2 min-w-0">
             {icon}
-            {title}
+            {/* Title can be long; prevent overflow */}
+            <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+              {title}
+            </div>
           </div>
-          {right}
+
+          {/* Right side can wrap under title on mobile */}
+          {right && <div className="flex flex-wrap items-center gap-2">{right}</div>}
         </header>
       )}
-      <div className={cx('p-4', bodyClass)}>{children}</div>
+
+      <div className={cx('p-4 min-w-0', bodyClass)}>{children}</div>
     </section>
   );
 }
@@ -310,7 +321,12 @@ function Chip({
     rose: 'bg-rose-600/20 text-rose-300 ring-rose-500/30',
     amber: 'bg-amber-600/20 text-amber-300 ring-amber-500/30',
   };
-  return <span className={cx('px-2 py-0.5 rounded text-xs ring-1', map[color])}>{children}</span>;
+
+  return (
+    <span className={cx('inline-flex items-center px-2 py-0.5 rounded text-xs ring-1', map[color])}>
+      {children}
+    </span>
+  );
 }
 
 /* ── Pill (button) ────────────────────────────────────────────────────────── */
@@ -337,6 +353,7 @@ function Pill({
     emerald: 'bg-emerald-600 hover:bg-emerald-500 text-white',
     rose: 'bg-rose-600 hover:bg-rose-500 text-white',
   };
+
   return (
     <button
       type="button"
@@ -345,13 +362,15 @@ function Pill({
       disabled={disabled || loading}
       className={cx(
         'inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm transition',
+        'max-w-full min-w-0',
         styles[tone],
-        (disabled || loading) && 'opacity-60 cursor-not-allowed',
+        (disabled || loading) && 'opacity-60 cursor-not-allowed'
       )}
     >
-      {loading && <FiLoader className="animate-spin" aria-hidden />}
-      {icon}
-      <span>{children}</span>
+      {loading && <FiLoader className="animate-spin shrink-0" aria-hidden />}
+      {icon && <span className="shrink-0">{icon}</span>}
+      {/* Truncate long labels so they never push width */}
+      <span className="min-w-0 truncate">{children}</span>
     </button>
   );
 }
@@ -378,12 +397,14 @@ function LabeledInput({
   className?: string;
 }) {
   const id = useId();
+
   return (
-    <div className={className}>
+    <div className={cx('min-w-0', className)}>
       <label htmlFor={id} className="text-sm text-zinc-400">
         {label}
       </label>
-      <div className="mt-1 relative">
+
+      <div className="mt-1 relative min-w-0">
         <input
           id={id}
           type={type}
@@ -391,9 +412,7 @@ function LabeledInput({
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
           placeholder={placeholder}
-          className={cx(
-            'w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 pr-10 outline-none focus:border-emerald-600',
-          )}
+          className="w-full min-w-0 rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 pr-10 outline-none focus:border-emerald-600"
         />
         {right && <div className="absolute inset-y-0 right-2 flex items-center">{right}</div>}
       </div>
@@ -431,27 +450,36 @@ function Modal({
     <div
       ref={backdropRef}
       onMouseDown={onBackdrop}
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm grid place-items-center z-50"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 grid place-items-center p-2 sm:p-4"
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-        <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-          <div className="flex items-center gap-2 text-zinc-300">
-            <FiUsers className="text-emerald-400" />
-            {title}
+      <div
+        className={cx(
+          'w-full sm:max-w-lg bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden',
+          'max-h-[90vh] flex flex-col'
+        )}
+      >
+        <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-zinc-800 min-w-0">
+          <div className="flex items-center gap-2 text-zinc-300 min-w-0">
+            <FiUsers className="text-emerald-400 shrink-0" />
+            <div className="min-w-0 truncate">{title}</div>
           </div>
+
           <button
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-200 p-1 rounded"
+            className="text-zinc-400 hover:text-zinc-200 p-1 rounded shrink-0"
             aria-label="Close"
           >
             <FiX />
           </button>
         </header>
-        <div className="p-4">{children}</div>
+
+        {/* Scroll the body if content is tall */}
+        <div className="p-4 overflow-y-auto min-w-0 flex-1">{children}</div>
+
         {footer && (
-          <div className="px-4 py-3 border-t border-zinc-800 flex items-center justify-end gap-2">
+          <div className="px-4 py-3 border-t border-zinc-800 flex flex-wrap items-center justify-end gap-2">
             {footer}
           </div>
         )}
@@ -478,9 +506,9 @@ function ActionTile({
       type="button"
       onClick={onClick}
       className={cx(
-        'h-20 rounded-lg bg-gradient-to-b hover:opacity-95 px-4 text-left',
+        'w-full min-h-20 h-auto rounded-lg bg-gradient-to-b hover:opacity-95 px-4 py-3 text-left',
         text === 'zinc' ? 'text-zinc-100' : 'text-white',
-        color,
+        color
       )}
     >
       {children}
@@ -489,6 +517,7 @@ function ActionTile({
 }
 
 export { Card, Chip, Pill, LabeledInput, Modal, ActionTile };
+
 
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
@@ -812,107 +841,219 @@ export default function MyStreamsPage() {
 
   /* ────────────────────────────── RENDER ────────────────────────────── */
   return (
-    <main className="min-h-screen bg-black text-white w-full max-w-none overflow-hidden pl-0 pr-4 sm:pr-6 lg:pr-8 py-8">
+    <main className="min-h-screen bg-black text-white w-full max-w-none min-w-0 px-2 sm:px-4 lg:px-6 py-6 sm:py-8 overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold text-emerald-400">🎬 My Streams</span>
-          {statusChip}
-          {healthChip}
-          {mediaError && <span className="text-rose-400 text-sm ml-2">{mediaError}</span>}
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between min-w-0">
+        {/* Left: Title + status */}
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <span className="text-2xl font-bold text-emerald-400">🎬 My Streams</span>
+            {statusChip}
+            {healthChip}
+          </div>
+
+          {mediaError && (
+            <div className="mt-2 text-rose-400 text-sm break-words">
+              {mediaError}
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Layout preset */}
-          <div className="flex items-center gap-2">
-            {(['solo','wide','studio'] as LayoutPreset[]).map(p => (
-              <button key={p} onClick={() => setLayout(p)} className={`text-xs px-3 py-1 rounded-md ${layout===p?'bg-zinc-800':'hover:bg-zinc-800'}`}>{p.toUpperCase()}</button>
+        {/* Right: Controls (wrap + stack on phone) */}
+        <div className="min-w-0 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
+          {/* Layout preset buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            {(['solo', 'wide', 'studio'] as LayoutPreset[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => setLayout(p)}
+                className={`text-[10px] sm:text-xs px-3 py-1 rounded-md ${
+                  layout === p ? 'bg-zinc-800' : 'hover:bg-zinc-800'
+                }`}
+              >
+                {p.toUpperCase()}
+              </button>
             ))}
           </div>
 
           {/* Stream profile */}
-          <div className="ml-2">
-            <select
-              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
-              value={profile}
-              onChange={(e)=>setProfile(e.target.value as Profile)}
-              title="Capture profile"
-            >
-              <option value="mobile">MOBILE (480p30)</option>
-              <option value="standard">STANDARD (720p30)</option>
-              <option value="high">HIGH (1080p60)</option>
-            </select>
-          </div>
+          <select
+            className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1 w-full sm:w-auto"
+            value={profile}
+            onChange={(e) => setProfile(e.target.value as Profile)}
+            title="Capture profile"
+          >
+            <option value="mobile">MOBILE (480p30)</option>
+            <option value="standard">STANDARD (720p30)</option>
+            <option value="high">HIGH (1080p60)</option>
+          </select>
 
-          {/* Device pickers */}
-          <div className="hidden md:flex items-center gap-2 ml-2">
+          {/* ✅ Mobile device pickers (since desktop ones are hidden on small screens) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full md:hidden">
             <select
-              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
+              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-2 w-full min-w-0"
               value={camId ?? ''}
-              onChange={(e)=>setCamId(e.target.value || null)}
+              onChange={(e) => setCamId(e.target.value || null)}
               title="Camera"
             >
               <option value="">Default Camera</option>
-              {cams.map(d => <option key={d.deviceId} value={d.deviceId}>{d.label || 'Camera'}</option>)}
+              {cams.map((d) => (
+                <option key={d.deviceId} value={d.deviceId}>
+                  {d.label || 'Camera'}
+                </option>
+              ))}
             </select>
+
             <select
-              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
+              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-2 w-full min-w-0"
               value={micId ?? ''}
-              onChange={(e)=>setMicId(e.target.value || null)}
+              onChange={(e) => setMicId(e.target.value || null)}
               title="Microphone"
             >
               <option value="">Default Mic</option>
-              {mics.map(d => <option key={d.deviceId} value={d.deviceId}>{d.label || 'Microphone'}</option>)}
+              {mics.map((d) => (
+                <option key={d.deviceId} value={d.deviceId}>
+                  {d.label || 'Microphone'}
+                </option>
+              ))}
             </select>
           </div>
 
-          <button title="Hotkeys" className="text-zinc-400 hover:text-zinc-100" onClick={() => setHelpOpen(true)}><FiHelpCircle /></button>
-          <Pill tone={live ? 'rose' : 'emerald'} icon={live ? <FiStopCircle /> : <FiPlay />} onClick={onToggleGoLive}>
-            {live ? 'End Stream' : 'Go Live'}
-          </Pill>
-          <Pill tone="zinc" icon={<FiPlay />} onClick={goLiveWithCountdown}>3-2-1</Pill>
-          <Pill icon={<FiSliders />} tone="zinc">Settings</Pill>
+          {/* Desktop device pickers */}
+          <div className="hidden md:flex items-center gap-2">
+            <select
+              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
+              value={camId ?? ''}
+              onChange={(e) => setCamId(e.target.value || null)}
+              title="Camera"
+            >
+              <option value="">Default Camera</option>
+              {cams.map((d) => (
+                <option key={d.deviceId} value={d.deviceId}>
+                  {d.label || 'Camera'}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="bg-zinc-900 border border-zinc-700 rounded-md text-xs px-2 py-1"
+              value={micId ?? ''}
+              onChange={(e) => setMicId(e.target.value || null)}
+              title="Microphone"
+            >
+              <option value="">Default Mic</option>
+              {mics.map((d) => (
+                <option key={d.deviceId} value={d.deviceId}>
+                  {d.label || 'Microphone'}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              title="Hotkeys"
+              className="text-zinc-400 hover:text-zinc-100"
+              onClick={() => setHelpOpen(true)}
+            >
+              <FiHelpCircle />
+            </button>
+
+            <Pill
+              tone={live ? 'rose' : 'emerald'}
+              icon={live ? <FiStopCircle /> : <FiPlay />}
+              onClick={onToggleGoLive}
+            >
+              {live ? 'End Stream' : 'Go Live'}
+            </Pill>
+
+            <Pill tone="zinc" icon={<FiPlay />} onClick={goLiveWithCountdown}>
+              3-2-1
+            </Pill>
+
+            <Pill icon={<FiSliders />} tone="zinc">
+              Settings
+            </Pill>
+          </div>
         </div>
       </div>
 
       {/* Desktop grid (fixed) */}
-<div className="hidden lg:grid grid-cols-12 gap-6 auto-rows-[minmax(0,1fr)]">
-  {/* LEFT column */}
-  <div className="col-span-7 min-w-0 min-h-0 flex flex-col gap-6">
-    {PreviewCard({
-      live, micOn, camOn,
-      toggleMic, toggleCam, takeScreenshot,
-      isSharing, startScreenShare, stopScreenShare, pipOn, setPipOn,
-      activeSource, setActiveSource, rebuildPreviewStream,
-      scenes, scene, switchScene, fadeKey, transition, duration, setDuration, setTransition,
-      videoRef, camPipRef, counting
-    })}
+      <div className="hidden lg:grid grid-cols-12 gap-6 auto-rows-[minmax(0,1fr)] min-w-0">
+        {/* LEFT column */}
+        <div className="col-span-7 min-w-0 min-h-0 flex flex-col gap-6">
+          {PreviewCard({
+            live,
+            micOn,
+            camOn,
+            toggleMic,
+            toggleCam,
+            takeScreenshot,
+            isSharing,
+            startScreenShare,
+            stopScreenShare,
+            pipOn,
+            setPipOn,
+            activeSource,
+            setActiveSource,
+            rebuildPreviewStream,
+            scenes,
+            scene,
+            switchScene,
+            fadeKey,
+            transition,
+            duration,
+            setDuration,
+            setTransition,
+            videoRef,
+            camPipRef,
+            counting,
+          })}
 
-    <div className="grid grid-cols-5 gap-6">
-      {StreamInfoCard(info, setInfo, 3)}
-      {QuickActionsCard(2)}
-    </div>
-  </div>
+          <div className="grid grid-cols-5 gap-6 min-w-0">
+            {StreamInfoCard(info, setInfo, 3)}
+            {QuickActionsCard(2)}
+          </div>
+        </div>
 
-  {/* RIGHT column */}
-  <div className="col-span-5 min-w-0 min-h-0 flex flex-col gap-6">
-    <div className="min-h-0">{ChatCard({ popoutChat })}</div>
-    <div className="min-h-0">{GuestsCard()}</div>
-    <div className="min-h-0">{AudioMixerCard(mixer, setMixer)}</div>
-    <div className="min-h-0">{HealthCard(health)}</div>
-  </div>
-</div>
-
+        {/* RIGHT column */}
+        <div className="col-span-5 min-w-0 min-h-0 flex flex-col gap-6">
+          <div className="min-h-0">{ChatCard({ popoutChat })}</div>
+          <div className="min-h-0">{GuestsCard()}</div>
+          <div className="min-h-0">{AudioMixerCard(mixer, setMixer)}</div>
+          <div className="min-h-0">{HealthCard(health)}</div>
+        </div>
+      </div>
 
       {/* Mobile stack */}
-      <div className="lg:hidden space-y-4">
+      <div className="lg:hidden space-y-4 min-w-0">
         {PreviewCard({
-          live, micOn, camOn,
-          toggleMic, toggleCam, takeScreenshot,
-          isSharing, startScreenShare, stopScreenShare, pipOn, setPipOn,
-          activeSource, setActiveSource, rebuildPreviewStream,
-          scenes, scene, switchScene, fadeKey, transition, duration, setDuration, setTransition,
-          videoRef, camPipRef, counting
+          live,
+          micOn,
+          camOn,
+          toggleMic,
+          toggleCam,
+          takeScreenshot,
+          isSharing,
+          startScreenShare,
+          stopScreenShare,
+          pipOn,
+          setPipOn,
+          activeSource,
+          setActiveSource,
+          rebuildPreviewStream,
+          scenes,
+          scene,
+          switchScene,
+          fadeKey,
+          transition,
+          duration,
+          setDuration,
+          setTransition,
+          videoRef,
+          camPipRef,
+          counting,
         })}
         {ChatCard({ popoutChat })}
         {GuestsCard()}
@@ -924,23 +1065,40 @@ export default function MyStreamsPage() {
       {/* Hotkeys help */}
       {helpOpen && (
         <Modal title="Hotkeys" onClose={() => setHelpOpen(false)}>
-          <ul className="grid grid-cols-2 gap-2 text-sm text-zinc-300">
-            <li><kbd className="px-2 py-1 bg-zinc-800 rounded">G</kbd> Toggle Go Live</li>
-            <li><kbd className="px-2 py-1 bg-zinc-800 rounded">M</kbd> Toggle Mic</li>
-            <li><kbd className="px-2 py-1 bg-zinc-800 rounded">V</kbd> Toggle Cam</li>
-            <li><kbd className="px-2 py-1 bg-zinc-800 rounded">S</kbd> Start/Stop Screen Share</li>
-            <li><kbd className="px-2 py-1 bg-zinc-800 rounded">P</kbd> Toggle PIP</li>
-            <li><kbd className="px-2 py-1 bg-zinc-800 rounded">1..4</kbd> Switch Scene</li>
-            <li><kbd className="px-2 py-1 bg-zinc-800 rounded">C</kbd> Cut</li>
-            <li><kbd className="px-2 py-1 bg-zinc-800 rounded">F</kbd> Fade</li>
-            <li><kbd className="px-2 py-1 bg-zinc-800 rounded">?</kbd> Toggle Help</li>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-zinc-300">
+            <li>
+              <kbd className="px-2 py-1 bg-zinc-800 rounded">G</kbd> Toggle Go Live
+            </li>
+            <li>
+              <kbd className="px-2 py-1 bg-zinc-800 rounded">M</kbd> Toggle Mic
+            </li>
+            <li>
+              <kbd className="px-2 py-1 bg-zinc-800 rounded">V</kbd> Toggle Cam
+            </li>
+            <li>
+              <kbd className="px-2 py-1 bg-zinc-800 rounded">S</kbd> Start/Stop Screen Share
+            </li>
+            <li>
+              <kbd className="px-2 py-1 bg-zinc-800 rounded">P</kbd> Toggle PIP
+            </li>
+            <li>
+              <kbd className="px-2 py-1 bg-zinc-800 rounded">1..4</kbd> Switch Scene
+            </li>
+            <li>
+              <kbd className="px-2 py-1 bg-zinc-800 rounded">C</kbd> Cut
+            </li>
+            <li>
+              <kbd className="px-2 py-1 bg-zinc-800 rounded">F</kbd> Fade
+            </li>
+            <li>
+              <kbd className="px-2 py-1 bg-zinc-800 rounded">?</kbd> Toggle Help
+            </li>
           </ul>
         </Modal>
       )}
     </main>
   );
 }
-
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
    │ 6) FEATURE RENDERERS (pure functions, easy to move/split)                  │
@@ -970,10 +1128,10 @@ function Kbd({ children }: { children: React.ReactNode }) {
   return <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 text-[11px]">{children}</kbd>;
 }
 
-function Meter({ value }: { value: number }) {
+function Meter({ value, className = '' }: { value: number; className?: string }) {
   // value: 0..100
   return (
-    <div className="w-28 h-2 rounded-full bg-zinc-800 overflow-hidden">
+    <div className={`h-2 rounded-full bg-zinc-800 overflow-hidden ${className}`}>
       <div
         className={`h-full ${value > 70 ? 'bg-emerald-500' : value > 40 ? 'bg-emerald-600/80' : 'bg-emerald-700/70'}`}
         style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
@@ -988,7 +1146,7 @@ function SceneButton({
   return (
     <button
       onClick={onClick}
-      className={`relative aspect-video rounded-md border text-xs bg-zinc-950 hover:border-zinc-700
+      className={`relative aspect-video rounded-md border text-[11px] sm:text-xs bg-zinc-950 hover:border-zinc-700
         ${active ? 'border-emerald-500 ring-2 ring-emerald-500/30' : 'border-zinc-800'}`}
       aria-pressed={active}
     >
@@ -1016,11 +1174,17 @@ function SourceRow({
                           <Badge tone="rose">Off</Badge>;
 
   return (
-    <li className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5">
-      <span className="text-zinc-300 inline-flex items-center gap-2">{icon} {label}</span>
-      <div className="flex items-center gap-3">
-        {badge}
-        {right}
+    <li className="bg-zinc-950 border border-zinc-800 rounded-md px-2 py-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-zinc-300 inline-flex items-center gap-2 min-w-0">
+          {icon}
+          <span className="truncate">{label}</span>
+        </span>
+
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          {badge}
+          {right}
+        </div>
       </div>
     </li>
   );
@@ -1050,14 +1214,14 @@ function PreviewCard(opts: {
     live, micOn, camOn, toggleMic, toggleCam, takeScreenshot,
     isSharing, startScreenShare, stopScreenShare, pipOn, setPipOn,
     activeSource, setActiveSource, rebuildPreviewStream,
-    scenes, scene, switchScene, fadeKey, transition, duration, setDuration, setTransition,
+    scenes, scene, fadeKey, transition, duration, setDuration, setTransition,
     videoRef, camPipRef, counting
   } = opts;
 
   const switchTo = (s: SourceKind) => { setActiveSource(s); rebuildPreviewStream(s); };
 
   const TransitionControl = (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Chip color="zinc">Transition</Chip>
       <div className="inline-flex rounded-md overflow-hidden border border-zinc-700">
         <button
@@ -1073,9 +1237,10 @@ function PreviewCard(opts: {
           Fade
         </button>
       </div>
+
       {transition==='fade' && (
         <select
-          className="bg-zinc-900 border border-zinc-700 rounded-md text-sm px-2 py-1"
+          className="bg-zinc-900 border border-zinc-700 rounded-md text-sm px-2 py-1 w-full sm:w-auto"
           value={duration}
           onChange={(e)=>setDuration(parseInt(e.target.value,10))}
         >
@@ -1090,23 +1255,33 @@ function PreviewCard(opts: {
       title="Stream Preview"
       icon={<FiVideo className="text-emerald-400" />}
       right={
-        <div className="flex items-center gap-2">
+        // Hide header-right controls on phones to avoid header overflow
+        <div className="hidden sm:flex flex-wrap items-center gap-2 justify-end">
           <Pill tone="zinc" icon={<FiImage />} onClick={takeScreenshot}>Screenshot</Pill>
           {TransitionControl}
         </div>
       }
       bodyClass="pb-3"
     >
-      <div className="grid grid-cols-12 gap-4">
+      {/* Mobile controls row (prevents header overflow on small screens) */}
+      <div className="sm:hidden mb-3 flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Pill tone="zinc" icon={<FiImage />} onClick={takeScreenshot}>Screenshot</Pill>
+        </div>
+        {TransitionControl}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 min-w-0">
         {/* Preview video */}
-        <div className="col-span-8">
+        <div className="lg:col-span-8 min-w-0">
           <div className="relative w-full aspect-video bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden">
             <video ref={videoRef} autoPlay muted playsInline className="absolute inset-0 w-full h-full object-cover" />
+
             {live && isSharing && (
               <video
                 ref={camPipRef}
                 autoPlay muted playsInline
-                className={`absolute bottom-3 right-3 w-48 h-28 rounded-md border border-zinc-800 bg-black object-cover transition ${pipOn ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                className={`absolute bottom-3 right-3 w-32 h-20 sm:w-48 sm:h-28 rounded-md border border-zinc-800 bg-black object-cover transition ${pipOn ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
               />
             )}
 
@@ -1117,7 +1292,11 @@ function PreviewCard(opts: {
               style={{ ['--dur' as any]: `${duration}ms` }}
             >
               {!live && 'Camera/Screen will show here'}
-              {counting !== null && <div className="text-6xl font-bold text-white bg-black/40 px-6 py-3 rounded-xl">{counting}</div>}
+              {counting !== null && (
+                <div className="text-5xl sm:text-6xl font-bold text-white bg-black/40 px-6 py-3 rounded-xl">
+                  {counting}
+                </div>
+              )}
             </div>
             <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
 
@@ -1128,9 +1307,11 @@ function PreviewCard(opts: {
             <Pill tone="zinc" icon={<FiCopy />}>Copy Stream Key</Pill>
             <Pill tone="zinc" icon={<FiLink />}>Ingest URL</Pill>
             <Pill tone="zinc" icon={<FiBell />}>Alerts</Pill>
+
             <Pill tone="zinc" icon={micOn ? <FiMic /> : <FiMicOff />} onClick={toggleMic}>
               {micOn ? <>Mic On <span className="ml-1 opacity-70"><Kbd>M</Kbd></span></> : <>Mic Off <span className="ml-1 opacity-70"><Kbd>M</Kbd></span></>}
             </Pill>
+
             <Pill tone="zinc" icon={camOn ? <FiCamera /> : <FiCameraOff />} onClick={toggleCam}>
               {camOn ? <>Cam On <span className="ml-1 opacity-70"><Kbd>V</Kbd></span></> : <>Cam Off <span className="ml-1 opacity-70"><Kbd>V</Kbd></span></>}
             </Pill>
@@ -1138,9 +1319,11 @@ function PreviewCard(opts: {
         </div>
 
         {/* Scenes & Sources */}
-        <div className="col-span-4">
+        <div className="lg:col-span-4 min-w-0">
           <SectionTitle icon={<FiFilm />}>Scenes</SectionTitle>
-          <div className="grid grid-cols-3 gap-2">
+
+          {/* 2 cols on phones, 3 on small+ */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {scenes.map((label, i) => (
               <SceneButton key={i} label={label} active={scene === i} onClick={() => opts.switchScene(i)} />
             ))}
@@ -1153,26 +1336,27 @@ function PreviewCard(opts: {
               label="Camera"
               status={activeSource === 'camera' && live ? 'active' : camOn ? 'ready' : 'off'}
               right={
-                <div className="flex items-center gap-2">
-                  <button className="text-xs text-zinc-400 hover:text-zinc-200" onClick={() => { switchTo('camera'); }}>Use</button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button className="text-xs text-zinc-400 hover:text-zinc-200" onClick={() => switchTo('camera')}>Use</button>
                   <button className="text-xs text-zinc-400 hover:text-zinc-200" onClick={toggleCam}>{camOn ? 'Disable' : 'Enable'}</button>
                 </div>
               }
             />
+
             <SourceRow
               icon={<FiMonitor />}
               label="Screen"
-              status={activeSource === 'screen' && live ? 'active' : opts.isSharing ? 'ready' : 'off'}
+              status={activeSource === 'screen' && live ? 'active' : isSharing ? 'ready' : 'off'}
               right={
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {!isSharing ? (
-                    <button className="text-xs text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1" onClick={opts.startScreenShare}>
+                    <button className="text-xs text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1" onClick={startScreenShare}>
                       <FiSquare /> Start
                     </button>
                   ) : (
                     <>
-                      <button className="text-xs text-zinc-400 hover:text-zinc-200" onClick={() => { switchTo('screen'); }}>Use</button>
-                      <button className="text-xs text-rose-400 hover:text-rose-300 inline-flex items-center gap-1" onClick={opts.stopScreenShare}>
+                      <button className="text-xs text-zinc-400 hover:text-zinc-200" onClick={() => switchTo('screen')}>Use</button>
+                      <button className="text-xs text-rose-400 hover:text-rose-300 inline-flex items-center gap-1" onClick={stopScreenShare}>
                         <FiStopCircle /> Stop
                       </button>
                     </>
@@ -1180,15 +1364,21 @@ function PreviewCard(opts: {
                 </div>
               }
             />
+
             {isSharing && (
               <SourceRow
                 icon={<FiLayers />}
                 label="Camera PIP"
                 status={pipOn ? 'ready' : 'off'}
-                right={<button className="text-xs text-zinc-400 hover:text-zinc-200" onClick={() => opts.setPipOn(!pipOn)}>{pipOn ? 'Hide' : 'Show'}</button>}
+                right={
+                  <button className="text-xs text-zinc-400 hover:text-zinc-200" onClick={() => setPipOn(!pipOn)}>
+                    {pipOn ? 'Hide' : 'Show'}
+                  </button>
+                }
               />
             )}
-            <li className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5">
+
+            <li className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-md px-2 py-2">
               <span className="text-zinc-300">Active source</span>
               <Chip color="emerald">{activeSource.toUpperCase()}</Chip>
             </li>
@@ -1201,14 +1391,41 @@ function PreviewCard(opts: {
 
 /* ───────────────────────────── Stream Info ─────────────────────────────── */
 
+const COL_SPAN_MAP: Record<number, string> = {
+  1: 'col-span-1',
+  2: 'col-span-2',
+  3: 'col-span-3',
+  4: 'col-span-4',
+  5: 'col-span-5',
+};
+
 function StreamInfoCard(info: any, setInfo: (v:any)=>void, colSpan = 3) {
+  const spanClass = COL_SPAN_MAP[colSpan] ?? 'col-span-3';
+
   return (
-    <Card title="Stream Info" icon={<FiSettings className="text-emerald-400" />} className={`col-span-${colSpan}`}>
+    <Card title="Stream Info" icon={<FiSettings className="text-emerald-400" />} className={spanClass}>
       <div className="space-y-3">
-        <LabeledInput label="Title" placeholder="What are we streaming today?" value={info.title} onChange={(v)=>setInfo({ ...info, title: v })}/>
-        <div className="grid grid-cols-2 gap-3">
-          <LabeledInput label="Category" placeholder="Game / IRL / Music" value={info.category} onChange={(v)=>setInfo({ ...info, category: v })}/>
-          <LabeledInput label="Tags" placeholder="chill, talk-show" value={info.tags} onChange={(v)=>setInfo({ ...info, tags: v })}/>
+        <LabeledInput
+          label="Title"
+          placeholder="What are we streaming today?"
+          value={info.title}
+          onChange={(v)=>setInfo({ ...info, title: v })}
+        />
+
+        {/* 1 col on phones, 2 on small+ */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <LabeledInput
+            label="Category"
+            placeholder="Game / IRL / Music"
+            value={info.category}
+            onChange={(v)=>setInfo({ ...info, category: v })}
+          />
+          <LabeledInput
+            label="Tags"
+            placeholder="chill, talk-show"
+            value={info.tags}
+            onChange={(v)=>setInfo({ ...info, tags: v })}
+          />
         </div>
       </div>
     </Card>
@@ -1218,8 +1435,10 @@ function StreamInfoCard(info: any, setInfo: (v:any)=>void, colSpan = 3) {
 /* ───────────────────────────── Quick Actions ───────────────────────────── */
 
 function QuickActionsCard(colSpan = 2) {
+  const spanClass = COL_SPAN_MAP[colSpan] ?? 'col-span-2';
+
   return (
-    <Card title="Quick Actions" icon={<FiActivity className="text-emerald-400" />} className={`col-span-${colSpan}`}>
+    <Card title="Quick Actions" icon={<FiActivity className="text-emerald-400" />} className={spanClass}>
       <div className="grid grid-cols-2 gap-2">
         <ActionTile color="from-fuchsia-600 to-fuchsia-500">Raid Channel</ActionTile>
         <ActionTile color="from-emerald-600 to-emerald-500">Manage Goals</ActionTile>
@@ -1237,10 +1456,20 @@ function ChatCard({ popoutChat }: { popoutChat: () => void }) {
     <Card
       title="My Chat"
       icon={<FiActivity className="rotate-90 text-emerald-400" />}
-      right={<Pill tone="zinc" icon={<FiExternalLink />} onClick={popoutChat}>Popout</Pill>}
+      right={
+        // Avoid header crunch on extra-small widths
+        <div className="hidden sm:block">
+          <Pill tone="zinc" icon={<FiExternalLink />} onClick={popoutChat}>Popout</Pill>
+        </div>
+      }
       className="h-[48vh]"
       bodyClass="h-full flex flex-col"
     >
+      {/* Mobile popout button inside body */}
+      <div className="sm:hidden mb-3">
+        <Pill tone="zinc" icon={<FiExternalLink />} onClick={popoutChat}>Popout</Pill>
+      </div>
+
       <div className="flex-1 overflow-y-auto space-y-2 pr-1" aria-live="polite" aria-label="Chat log">
         {[...Array(40)].map((_, i) => (
           <div key={i} className="text-sm text-zinc-300">
@@ -1248,11 +1477,22 @@ function ChatCard({ popoutChat }: { popoutChat: () => void }) {
           </div>
         ))}
       </div>
-      <div className="mt-3 flex gap-2">
-        <input aria-label="Message input" className="flex-1 rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 outline-none focus:border-emerald-600" placeholder="Send a message" />
-        <button aria-label="Send message" className="rounded-md bg-emerald-600 hover:bg-emerald-500 px-3">Chat</button>
+
+      <div className="mt-3 flex flex-col sm:flex-row gap-2">
+        <input
+          aria-label="Message input"
+          className="flex-1 rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 outline-none focus:border-emerald-600"
+          placeholder="Send a message"
+        />
+        <button
+          aria-label="Send message"
+          className="rounded-md bg-emerald-600 hover:bg-emerald-500 px-4 py-2"
+        >
+          Chat
+        </button>
       </div>
-      <div className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
+
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
         <span>Moderation:</span>
         <button className="hover:text-zinc-200">Clear</button>
         <button className="hover:text-zinc-200">Slow</button>
@@ -1266,8 +1506,22 @@ function ChatCard({ popoutChat }: { popoutChat: () => void }) {
 
 function GuestsCard() {
   return (
-    <Card title="Collaboration" icon={<FiUsers className="text-emerald-400" />} right={<Pill tone="emerald" icon={<FiPlus />}>Invite</Pill>}>
-      <div className="grid grid-cols-2 gap-3">
+    <Card
+      title="Collaboration"
+      icon={<FiUsers className="text-emerald-400" />}
+      right={
+        <div className="hidden sm:block">
+          <Pill tone="emerald" icon={<FiPlus />}>Invite</Pill>
+        </div>
+      }
+    >
+      {/* Mobile invite button inside body */}
+      <div className="sm:hidden mb-3">
+        <Pill tone="emerald" icon={<FiPlus />}>Invite</Pill>
+      </div>
+
+      {/* 1 col on phones, 2 on small+ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {[0,1,2,3].map(i => (
           <div key={i} className="relative aspect-video rounded-lg bg-zinc-950 border border-zinc-800 overflow-hidden">
             <div className="absolute inset-0 grid place-items-center text-zinc-600">Guest {i+1}</div>
@@ -1278,7 +1532,9 @@ function GuestsCard() {
           </div>
         ))}
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-3">
+
+      {/* 1 col on phones, 2 on small+ */}
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
           <div className="text-sm text-zinc-400 mb-2">Favorites</div>
           <div className="text-zinc-500 text-sm">You haven&apos;t added any collaborators yet.</div>
@@ -1305,18 +1561,23 @@ function AudioMixerCard(mixer: MixerState, setMixer: (v: MixerState)=>void) {
     const setMute = (m: boolean) => setMixer({ ...mixer, [id]: { vol, mute: m } });
 
     return (
-      <div className="flex items-center gap-2">
-        <span className="w-28 text-sm text-zinc-300 inline-flex items-center gap-2">{icon}{label}</span>
-        <Meter value={mute ? 0 : vol} />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <span className="text-sm text-zinc-300 inline-flex items-center gap-2 sm:w-32 w-full">
+          {icon}{label}
+        </span>
+
+        <Meter value={mute ? 0 : vol} className="w-full sm:w-28" />
+
         <input
           aria-label={`${label} volume`}
           type="range" min={0} max={100} value={vol}
           onChange={(e)=>setVol(parseInt(e.target.value,10))}
-          className="flex-1 accent-emerald-500"
+          className="w-full sm:flex-1 accent-emerald-500"
         />
+
         <button
           onClick={()=>setMute(!mute)}
-          className="w-9 h-9 rounded-md bg-zinc-800 hover:bg-zinc-700 grid place-items-center"
+          className="w-10 h-10 rounded-md bg-zinc-800 hover:bg-zinc-700 grid place-items-center self-end sm:self-auto"
           aria-label={`${mute ? 'Unmute' : 'Mute'} ${label}`}
           title={mute ? 'Unmute' : 'Mute'}
         >
@@ -1328,7 +1589,7 @@ function AudioMixerCard(mixer: MixerState, setMixer: (v: MixerState)=>void) {
 
   return (
     <Card title="Audio Mixer" icon={<FiSliders className="text-emerald-400" />}>
-      <div className="space-y-3">
+      <div className="space-y-4">
         <Row id="mic"    label="Microphone" icon={<FiMic />} />
         <Row id="system" label="System"     icon={<FiMonitor />} />
         <Row id="music"  label="Music"      icon={<FiActivity />} />
@@ -1358,9 +1619,9 @@ function HealthCard(h: {bitrate:number; fps:number; cpu:number; drops:number;}) 
   return (
     <Card title="Stream Health" icon={<FiCpu className="text-emerald-400" />}>
       <div className="space-y-3 text-sm">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <span className="text-zinc-400">Bitrate</span>
-          <span className="text-zinc-200 flex items-center gap-2">
+          <span className="text-zinc-200 flex flex-wrap items-center gap-2 justify-end">
             {h.bitrate} kbps <Badge tone={quality.tone as any}>{quality.label}</Badge>
           </span>
         </div>
@@ -1373,7 +1634,6 @@ function HealthCard(h: {bitrate:number; fps:number; cpu:number; drops:number;}) 
         <Bar v={h.cpu} max={100} />
 
         <div className="flex items-center justify-between"><span className="text-zinc-400">Dropped Frames</span><span className="text-zinc-200">{h.drops}</span></div>
-
         <div className="flex items-center justify-between"><span className="text-zinc-400">Preview Latency</span><span className="text-zinc-200">{Math.round(latencyMs)} ms</span></div>
       </div>
     </Card>

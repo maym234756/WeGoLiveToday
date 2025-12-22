@@ -675,7 +675,7 @@ export default function ExtensionsPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 min-w-0">
         <div className="flex flex-wrap items-center gap-3 min-w-0">
-          <span className="text-2xl font-bold text-emerald-400">🧩 Extensions</span>
+          <span className="text-2xl font-bold text-emerald-400">🧩 Store</span>
           <Chip>Marketplace</Chip>
         </div>
 
@@ -707,7 +707,7 @@ export default function ExtensionsPage() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search extensions…"
+                placeholder="Search products"
                 className="bg-transparent outline-none text-sm placeholder:text-zinc-500 w-full min-w-0"
               />
             </div>
