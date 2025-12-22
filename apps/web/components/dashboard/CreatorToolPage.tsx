@@ -14,72 +14,133 @@ import {
    │ 1) LIGHTWEIGHT PRIMITIVES (local to keep this file drop-in ready)          │
    ╰────────────────────────────────────────────────────────────────────────────╯ */
 function Card({
-  title, icon, right, children, className = '', bodyClass = '',
+  title,
+  icon,
+  right,
+  children,
+  className = '',
+  bodyClass = '',
 }: {
-  title: string; icon?: React.ReactNode; right?: React.ReactNode;
-  children: React.ReactNode; className?: string; bodyClass?: string;
+  title: string;
+  icon?: React.ReactNode;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  bodyClass?: string;
 }) {
   return (
-    <section className={`bg-zinc-900 border border-zinc-800 rounded-xl ${className}`}>
-      <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 text-zinc-300">
-        <div className="flex items-center gap-2">{icon}{title}</div>
-        {right}
+    <section className={`bg-zinc-900 border border-zinc-800 rounded-xl min-w-0 ${className}`}>
+      <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-b border-zinc-800 text-zinc-300 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          {icon}
+          <span className="truncate">{title}</span>
+        </div>
+
+        {right && (
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end min-w-0">
+            {right}
+          </div>
+        )}
       </header>
-      <div className={`p-4 ${bodyClass}`}>{children}</div>
+
+      <div className={`p-4 min-w-0 ${bodyClass}`}>{children}</div>
     </section>
   );
 }
-function Chip({ color = 'emerald', children }: { color?: 'emerald' | 'zinc' | 'rose' | 'amber' | 'sky'; children: React.ReactNode }) {
+
+function Chip({
+  color = 'emerald',
+  children,
+}: {
+  color?: 'emerald' | 'zinc' | 'rose' | 'amber' | 'sky';
+  children: React.ReactNode;
+}) {
   const map: Record<string, string> = {
     emerald: 'bg-emerald-600/20 text-emerald-300 ring-emerald-500/30',
-    zinc:    'bg-zinc-700/30 text-zinc-300 ring-zinc-500/30',
-    rose:    'bg-rose-600/20 text-rose-300 ring-rose-500/30',
-    amber:   'bg-amber-600/20 text-amber-300 ring-amber-500/30',
-    sky:     'bg-sky-600/20 text-sky-300 ring-sky-500/30',
+    zinc: 'bg-zinc-700/30 text-zinc-300 ring-zinc-500/30',
+    rose: 'bg-rose-600/20 text-rose-300 ring-rose-500/30',
+    amber: 'bg-amber-600/20 text-amber-300 ring-amber-500/30',
+    sky: 'bg-sky-600/20 text-sky-300 ring-sky-500/30',
   };
-  return <span className={`px-2 py-0.5 rounded text-xs ring-1 ${map[color]}`}>{children}</span>;
+  return (
+    <span className={`px-2 py-0.5 rounded text-xs ring-1 inline-flex items-center ${map[color]}`}>
+      {children}
+    </span>
+  );
 }
+
 function Pill({
-  children, onClick, tone = 'zinc', icon, disabled,
-}: { children: React.ReactNode; onClick?: () => void; tone?: 'zinc'|'emerald'|'rose'|'sky'; icon?: React.ReactNode; disabled?: boolean }) {
-  const styles: Record<string,string> = {
+  children,
+  onClick,
+  tone = 'zinc',
+  icon,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  tone?: 'zinc' | 'emerald' | 'rose' | 'sky';
+  icon?: React.ReactNode;
+  disabled?: boolean;
+}) {
+  const styles: Record<string, string> = {
     zinc: 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100',
     emerald: 'bg-emerald-600 hover:bg-emerald-500 text-white',
     rose: 'bg-rose-600 hover:bg-rose-500 text-white',
     sky: 'bg-sky-600 hover:bg-sky-500 text-white',
   };
+
   return (
     <button
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm transition disabled:opacity-60 ${styles[tone]}`}
+      className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm transition disabled:opacity-60 max-w-full ${styles[tone]}`}
     >
-      {icon}{children}
+      {icon}
+      <span className="truncate">{children}</span>
     </button>
   );
 }
+
 function LabeledInput({
-  label, value, onChange, placeholder, right, type = 'text',
+  label,
+  value,
+  onChange,
+  placeholder,
+  right,
+  type = 'text',
 }: {
-  label: string; value: string; onChange?: (v: string) => void;
-  placeholder?: string; right?: React.ReactNode; type?: React.HTMLInputTypeAttribute;
+  label: string;
+  value: string;
+  onChange?: (v: string) => void;
+  placeholder?: string;
+  right?: React.ReactNode;
+  type?: React.HTMLInputTypeAttribute;
 }) {
   const id = useMemo(() => `in-${Math.random().toString(36).slice(2, 8)}`, []);
   return (
-    <div>
-      <label htmlFor={id} className="text-sm text-zinc-400">{label}</label>
-      <div className="mt-1 relative">
+    <div className="min-w-0">
+      <label htmlFor={id} className="text-sm text-zinc-400">
+        {label}
+      </label>
+      <div className="mt-1 relative min-w-0">
         <input
-          id={id} type={type} value={value}
+          id={id}
+          type={type}
+          value={value}
           onChange={(e) => onChange?.(e.target.value)}
           placeholder={placeholder}
-          className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 pr-10 outline-none focus:border-emerald-600"
+          className="w-full min-w-0 rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 pr-10 outline-none focus:border-emerald-600"
         />
-        {right && <div className="absolute inset-y-0 right-2 flex items-center">{right}</div>}
+        {right && (
+          <div className="absolute inset-y-0 right-2 flex items-center">
+            {right}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
    │ 2) PAGE                                                                    │
@@ -90,16 +151,16 @@ export default function CreatorToolsPage() {
   >('all');
 
   return (
-    <main className="min-h-screen w-full min-w-0 bg-black text-white max-w-none px-2 sm:px-4 lg:px-6 py-6 sm:py-8 overflow-x-auto">
+    <main className="min-h-screen w-full min-w-0 bg-black text-white max-w-none px-2 sm:px-4 lg:px-6 py-6 sm:py-8 overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold text-emerald-400">🛠 Creator Tools</span>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-2xl font-bold text-emerald-400 truncate">🛠 Creator Tools</span>
           <Chip>Studio</Chip>
           <Chip color="sky">Pro</Chip>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
           {(['all', 'video', 'overlays', 'audio', 'automation', 'growth'] as const).map((k) => (
             <button
               key={k}
@@ -121,9 +182,9 @@ export default function CreatorToolsPage() {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-12 gap-4">
+      <div className="grid grid-cols-12 gap-4 min-w-0">
         {/* LEFT COLUMN */}
-        <div className="col-span-12 xl:col-span-7 space-y-4">
+        <div className="col-span-12 xl:col-span-7 space-y-4 min-w-0">
           {(active === 'all' || active === 'video') && <ClipStudioCard />}
           {(active === 'all' || active === 'overlays') && <OverlayStudioCard />}
           {(active === 'all' || active === 'audio') && <SoundboardCard />}
@@ -131,7 +192,7 @@ export default function CreatorToolsPage() {
         </div>
 
         {/* RIGHT COLUMN */}
-        <div className="col-span-12 xl:col-span-5 space-y-4">
+        <div className="col-span-12 xl:col-span-5 space-y-4 min-w-0">
           {(active === 'all' || active === 'automation') && <AutoSceneCard />}
           {(active === 'all' || active === 'video') && <ABThumbnailCard />}
           {(active === 'all' || active === 'growth') && <SponsorToolkitCard />}
@@ -145,6 +206,7 @@ export default function CreatorToolsPage() {
     </main>
   );
 }
+
 
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
