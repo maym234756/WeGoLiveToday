@@ -85,65 +85,67 @@ function LabeledInput({
    │ 2) PAGE                                                                    │
    ╰────────────────────────────────────────────────────────────────────────────╯ */
 export default function CreatorToolsPage() {
-  const [active, setActive] = useState<'all'|'video'|'overlays'|'audio'|'automation'|'growth'>('all');
+  const [active, setActive] = useState<
+    'all' | 'video' | 'overlays' | 'audio' | 'automation' | 'growth'
+  >('all');
 
-return (
-  <main className="min-h-screen w-full min-w-0 bg-black text-white max-w-none px-2 sm:px-4 lg:px-6 py-6 sm:py-8 overflow-x-auto">
-    {/* Header */}
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-3">
-        <span className="text-2xl font-bold text-emerald-400">🛠 Creator Tools</span>
-        <Chip>Studio</Chip>
-        <Chip color="sky">Pro</Chip>
+  return (
+    <main className="min-h-screen w-full min-w-0 bg-black text-white max-w-none px-2 sm:px-4 lg:px-6 py-6 sm:py-8 overflow-x-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl font-bold text-emerald-400">🛠 Creator Tools</span>
+          <Chip>Studio</Chip>
+          <Chip color="sky">Pro</Chip>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {(['all', 'video', 'overlays', 'audio', 'automation', 'growth'] as const).map((k) => (
+            <button
+              key={k}
+              onClick={() => setActive(k)}
+              className={`text-xs px-3 py-1 rounded-md ${
+                active === k ? 'bg-zinc-800' : 'hover:bg-zinc-800'
+              } capitalize`}
+            >
+              {k}
+            </button>
+          ))}
+          <Pill icon={<FiHelpCircle />} tone="zinc">
+            Docs
+          </Pill>
+          <Pill icon={<FiSettings />} tone="zinc">
+            Settings
+          </Pill>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        {(['all', 'video', 'overlays', 'audio', 'automation', 'growth'] as const).map((k) => (
-          <button
-            key={k}
-            onClick={() => setActive(k)}
-            className={`text-xs px-3 py-1 rounded-md ${
-              active === k ? 'bg-zinc-800' : 'hover:bg-zinc-800'
-            } capitalize`}
-          >
-            {k}
-          </button>
-        ))}
-        <Pill icon={<FiHelpCircle />} tone="zinc">
-          Docs
-        </Pill>
-        <Pill icon={<FiSettings />} tone="zinc">
-          Settings
-        </Pill>
-      </div>
-    </div>
+      {/* Grid */}
+      <div className="grid grid-cols-12 gap-4">
+        {/* LEFT COLUMN */}
+        <div className="col-span-12 xl:col-span-7 space-y-4">
+          {(active === 'all' || active === 'video') && <ClipStudioCard />}
+          {(active === 'all' || active === 'overlays') && <OverlayStudioCard />}
+          {(active === 'all' || active === 'audio') && <SoundboardCard />}
+          {(active === 'all' || active === 'automation') && <MacrosCard />}
+        </div>
 
-    {/* Grid */}
-    <div className="grid grid-cols-12 gap-4">
-      {/* LEFT COLUMN */}
-      <div className="col-span-12 xl:col-span-7 space-y-4">
-        {(active === 'all' || active === 'video') && <ClipStudioCard />}
-        {(active === 'all' || active === 'overlays') && <OverlayStudioCard />}
-        {(active === 'all' || active === 'audio') && <SoundboardCard />}
-        {(active === 'all' || active === 'automation') && <MacrosCard />}
+        {/* RIGHT COLUMN */}
+        <div className="col-span-12 xl:col-span-5 space-y-4">
+          {(active === 'all' || active === 'automation') && <AutoSceneCard />}
+          {(active === 'all' || active === 'video') && <ABThumbnailCard />}
+          {(active === 'all' || active === 'growth') && <SponsorToolkitCard />}
+          {(active === 'all' || active === 'growth') && <SchedulerCard />}
+          {(active === 'all' || active === 'audio') && <CaptionsCard />}
+          {(active === 'all' || active === 'growth') && <EmoteMakerCard />}
+          <StreamChecklistCard />
+          <AssetLibraryCard />
+        </div>
       </div>
-
-      {/* RIGHT COLUMN */}
-      <div className="col-span-12 xl:col-span-5 space-y-4">
-        {(active === 'all' || active === 'automation') && <AutoSceneCard />}
-        {(active === 'all' || active === 'video') && <ABThumbnailCard />}
-        {(active === 'all' || active === 'growth') && <SponsorToolkitCard />}
-        {(active === 'all' || active === 'growth') && <SchedulerCard />}
-        {(active === 'all' || active === 'audio') && <CaptionsCard />}
-        {(active === 'all' || active === 'growth') && <EmoteMakerCard />}
-        <StreamChecklistCard />
-        <AssetLibraryCard />
-      </div>
-    </div>
-  </main>
-);
-
+    </main>
+  );
 }
+
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
    │ 3) FEATURE CARDS                                                           │
