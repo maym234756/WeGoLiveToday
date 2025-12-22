@@ -561,27 +561,48 @@ export default function ChannelSettingsPage() {
 
           {/* Security */}
           <Card title="Security" icon={<FiLock className="text-emerald-400" />}>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="space-y-3 min-w-0">
+              {/* Row: stacks on mobile */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-0">
                 <span className="text-sm text-zinc-300">Require 2FA for changes</span>
-                <Toggle checked={settings.security.require2FA} onChange={(v)=>setSecurity({ require2FA: v })} />
-              </div>
-              <div className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2">
-                <div className="text-sm">
-                  <div className="text-zinc-400">Stream key</div>
-                  <div className="text-zinc-200 font-mono">{settings.security.streamKeyMasked}</div>
+                <div className="shrink-0">
+                  <Toggle
+                    checked={settings.security.require2FA}
+                    onChange={(v) => setSecurity({ require2FA: v })}
+                  />
                 </div>
-                <div className="flex items-center gap-2">
-                  <PillButton tone="zinc" icon={<FiCopy />} onClick={()=>navigator.clipboard.writeText('REDACTED')}>
+              </div>
+
+              {/* Stream key card: stacks on mobile, wraps text safely */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 min-w-0">
+                <div className="text-sm min-w-0">
+                  <div className="text-zinc-400">Stream key</div>
+                  <div className="text-zinc-200 font-mono break-all">
+                    {settings.security.streamKeyMasked}
+                  </div>
+                </div>
+
+                {/* Buttons wrap on mobile */}
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <PillButton
+                    tone="zinc"
+                    icon={<FiCopy />}
+                    onClick={() => navigator.clipboard.writeText('REDACTED')}
+                  >
                     Copy
                   </PillButton>
-                  <PillButton tone="amber" icon={<FiRefreshCw />} onClick={() => setSecurity({ streamKeyMasked: maskNewKey() })}>
+                  <PillButton
+                    tone="amber"
+                    icon={<FiRefreshCw />}
+                    onClick={() => setSecurity({ streamKeyMasked: maskNewKey() })}
+                  >
                     Rotate
                   </PillButton>
                 </div>
               </div>
             </div>
           </Card>
+
 
           {/* Advanced */}
           <Card title="Advanced" icon={<FiSettings className="text-emerald-400" />}>

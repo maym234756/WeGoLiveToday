@@ -289,17 +289,19 @@ export default function AlertsPage() {
   const [unreadOnly, setUnreadOnly] = useLocalStorage('alerts.unreadOnly', false);
   const [sortNewest, setSortNewest] = useLocalStorage('alerts.sortNewest', true);
 
-  const unreadCount = useMemo(() => alerts.filter(a => !a.read).length, [alerts]);
+  const unreadCount = useMemo(() => alerts.filter((a) => !a.read).length, [alerts]);
 
   const filtered = useMemo(() => {
     let out = alerts.slice();
-    if (tab !== 'all') out = out.filter(a => a.type === tab);
-    if (unreadOnly) out = out.filter(a => !a.read);
+    if (tab !== 'all') out = out.filter((a) => a.type === tab);
+    if (unreadOnly) out = out.filter((a) => !a.read);
     if (query.trim()) {
       const q = query.trim().toLowerCase();
-      out = out.filter(a => a.title.toLowerCase().includes(q) || a.body.toLowerCase().includes(q));
+      out = out.filter(
+        (a) => a.title.toLowerCase().includes(q) || a.body.toLowerCase().includes(q)
+      );
     }
-    out.sort((a, b) => sortNewest ? b.createdAt - a.createdAt : a.createdAt - b.createdAt);
+    out.sort((a, b) => (sortNewest ? b.createdAt - a.createdAt : a.createdAt - b.createdAt));
     // Pinned first
     out.sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)));
     return out;
@@ -309,126 +311,135 @@ export default function AlertsPage() {
 
   // Handlers
   const toggleRead = (id: string) =>
-    setAlerts(prev => prev.map(a => (a.id === id ? { ...a, read: !a.read } : a)));
+    setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, read: !a.read } : a)));
 
   const togglePin = (id: string) =>
-    setAlerts(prev => prev.map(a => (a.id === id ? { ...a, pinned: !a.pinned } : a)));
+    setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, pinned: !a.pinned } : a)));
 
-  const dismiss = (id: string) =>
-    setAlerts(prev => prev.filter(a => a.id !== id));
+  const dismiss = (id: string) => setAlerts((prev) => prev.filter((a) => a.id !== id));
 
-  const markAllRead = () =>
-    setAlerts(prev => prev.map(a => ({ ...a, read: true })));
+  const markAllRead = () => setAlerts((prev) => prev.map((a) => ({ ...a, read: true })));
 
-  const clearAll = () =>
-    setAlerts(prev => prev.filter(a => a.pinned)); // keep pinned by default
+  const clearAll = () => setAlerts((prev) => prev.filter((a) => a.pinned)); // keep pinned by default
 
   return (
     <main className="min-h-screen bg-black text-white w-full max-w-none overflow-x-hidden">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-emerald-400 inline-flex items-center gap-2">
-            <FiBell /> Alerts
-          </h1>
-          {unreadCount > 0 && <Tag tone="emerald">{unreadCount} unread</Tag>}
+      {/* ✅ Phone-safe page container */}
+      <div className="w-full min-w-0 px-2 sm:px-4 lg:px-6 py-6 sm:py-8">
+        {/* ✅ Header stacks on mobile */}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+          <div className="flex flex-wrap items-center gap-3 min-w-0">
+            <h1 className="text-2xl font-bold text-emerald-400 inline-flex items-center gap-2">
+              <FiBell /> Alerts
+            </h1>
+            {unreadCount > 0 && <Tag tone="emerald">{unreadCount} unread</Tag>}
+          </div>
+
+          {/* ✅ Buttons wrap on mobile */}
+          <div className="flex flex-wrap items-center gap-2">
+            <PillButton tone="zinc" icon={<FiCheck />} onClick={markAllRead}>
+              Mark all read
+            </PillButton>
+            <PillButton tone="rose" icon={<FiX />} onClick={clearAll}>
+              Clear non-pinned
+            </PillButton>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <PillButton tone="zinc" icon={<FiCheck />} onClick={markAllRead}>
-            Mark all read
-          </PillButton>
-          <PillButton tone="rose" icon={<FiX />} onClick={clearAll}>
-            Clear non-pinned
-          </PillButton>
-        </div>
+        {/* Controls */}
+        <Card
+          title="Inbox"
+          icon={<FiFilter className="text-emerald-400" />}
+          right={
+            // ✅ Stack controls on mobile, inline on sm+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 min-w-0">
+              <label className="text-sm text-zinc-300 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  className="accent-emerald-500"
+                  checked={unreadOnly}
+                  onChange={(e) => setUnreadOnly(e.target.checked)}
+                />
+                Unread only
+              </label>
+
+              <select
+                value={sortNewest ? 'new' : 'old'}
+                onChange={(e) => setSortNewest(e.target.value === 'new')}
+                className="bg-zinc-900 border border-zinc-700 rounded-md text-sm px-2 py-2 sm:py-1 w-full sm:w-auto"
+              >
+                <option value="new">Newest first</option>
+                <option value="old">Oldest first</option>
+              </select>
+            </div>
+          }
+        >
+          {/* ✅ Tabs: wrap OR scroll (this is scrollable, which feels better on phone) */}
+          <div className="-mx-1 mb-3 overflow-x-auto">
+            <div className="px-1 flex w-max min-w-full items-center gap-2">
+              {TABS.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`shrink-0 px-3 py-1.5 rounded-md text-sm border transition ${
+                    tab === t.key
+                      ? 'bg-zinc-800 border-zinc-700'
+                      : 'border-zinc-800 hover:bg-zinc-900'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="relative mb-4 min-w-0">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search alerts by title or message…"
+              className="w-full min-w-0 rounded-md bg-zinc-950 border border-zinc-800 pl-10 pr-3 py-2 outline-none focus:border-emerald-600"
+            />
+          </div>
+
+          {/* List */}
+          {filtered.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div role="list" className="space-y-5 min-w-0">
+              {groups.map(({ label, items }) => (
+                <section key={label} className="min-w-0">
+                  <div className="text-xs text-zinc-400 mb-2 flex items-center gap-2">
+                    <span className="h-px w-4 bg-zinc-800" /> {label}
+                  </div>
+                  <ul className="space-y-2 min-w-0">
+                    {items.map((a) => (
+                      <AlertRow
+                        key={a.id}
+                        a={a}
+                        onToggleRead={toggleRead}
+                        onTogglePin={togglePin}
+                        onDismiss={dismiss}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {/* Footer hint */}
+        <p className="text-sm text-zinc-500 mt-6">
+          Pro tip: Pinned alerts are never removed by “Clear non-pinned”.
+        </p>
       </div>
-
-      {/* Controls */}
-      <Card
-        title="Inbox"
-        icon={<FiFilter className="text-emerald-400" />}
-        right={
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-zinc-300 flex items-center gap-2">
-              <input
-                type="checkbox"
-                className="accent-emerald-500"
-                checked={unreadOnly}
-                onChange={(e) => setUnreadOnly(e.target.checked)}
-              />
-              Unread only
-            </label>
-            <select
-              value={sortNewest ? 'new' : 'old'}
-              onChange={(e) => setSortNewest(e.target.value === 'new')}
-              className="bg-zinc-900 border border-zinc-700 rounded-md text-sm px-2 py-1"
-            >
-              <option value="new">Newest first</option>
-              <option value="old">Oldest first</option>
-            </select>
-          </div>
-        }
-      >
-        {/* Tabs */}
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          {TABS.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`px-3 py-1.5 rounded-md text-sm border transition ${
-                tab === t.key ? 'bg-zinc-800 border-zinc-700' : 'border-zinc-800 hover:bg-zinc-900'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Search */}
-        <div className="relative mb-4">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search alerts by title or message…"
-            className="w-full rounded-md bg-zinc-950 border border-zinc-800 pl-10 pr-3 py-2 outline-none focus:border-emerald-600"
-          />
-        </div>
-
-        {/* List */}
-        {filtered.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div role="list" className="space-y-5">
-            {groups.map(({ label, items }) => (
-              <section key={label}>
-                <div className="text-xs text-zinc-400 mb-2 flex items-center gap-2">
-                  <span className="h-px w-4 bg-zinc-800" /> {label}
-                </div>
-                <ul className="space-y-2">
-                  {items.map(a => (
-                    <AlertRow
-                      key={a.id}
-                      a={a}
-                      onToggleRead={toggleRead}
-                      onTogglePin={togglePin}
-                      onDismiss={dismiss}
-                    />
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      {/* Footer hint */}
-      <p className="text-sm text-zinc-500 mt-6">
-        Pro tip: Pinned alerts are never removed by “Clear non-pinned”.
-      </p>
     </main>
   );
 }
+
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
    │ 8) EMPTY STATE                                                             │

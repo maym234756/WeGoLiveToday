@@ -518,80 +518,164 @@ export default function OneOnOnePage() {
       </Card>
 
       {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4">
-        {/* Remote video */}
-        <Card title="Partner" icon={<FiUser className="text-emerald-400" />} className="lg:col-span-8" bodyClass="relative">
-          <div className="relative w-full aspect-video bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden">
-            <video ref={remoteVideoRef} autoPlay playsInline className={`absolute inset-0 w-full h-full object-cover ${prefs.safeMode && !bothReady ? 'blur-xl scale-[1.02]' : ''}`} />
-            {(stage==='searching' || stage==='matched' || stage==='connecting') && (
-              <div className="absolute inset-0 grid place-items-center text-zinc-400 text-sm">
-                {stage==='searching' && 'Looking for a great match…'}
-                {stage==='matched' && 'Match found — setting things up…'}
-                {stage==='connecting' && 'Connecting…'}
-              </div>
-            )}
-            {stage==='connected' && prefs.safeMode && !bothReady && (
-              <div className="absolute inset-0 grid place-items-center">
-                <div className="bg-black/60 backdrop-blur-md border border-zinc-800 rounded-xl px-5 py-4 text-center">
-                  <p className="text-zinc-200 font-medium">Safe Start</p>
-                  <p className="text-zinc-400 text-sm mt-1">Both users must press Ready to reveal video.</p>
-                  <div className="mt-3 flex items-center justify-center gap-2">
-                    <Pill tone="emerald" icon={<FiCheck/>} onClick={markReady} disabled={iAmReady}>{iAmReady?'Waiting…':'I am ready'}</Pill>
-                    <Pill tone="zinc" icon={<FiSkipForward/>} onClick={skip} disabled={skipCooldown>0}>{skipCooldown>0?`Skip (${skipCooldown})`:'Skip'}</Pill>
-                  </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4 min-w-0">
+          {/* Remote video */}
+          <Card
+            title="Partner"
+            icon={<FiUser className="text-emerald-400" />}
+            className="lg:col-span-8 min-w-0"
+            bodyClass="relative min-w-0"
+          >
+            <div className="relative w-full aspect-video bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden min-w-0">
+              <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className={`absolute inset-0 w-full h-full object-cover ${
+                  prefs.safeMode && !bothReady ? 'blur-xl scale-[1.02]' : ''
+                }`}
+              />
+
+              {(stage === 'searching' || stage === 'matched' || stage === 'connecting') && (
+                <div className="absolute inset-0 grid place-items-center text-zinc-400 text-sm px-4 text-center">
+                  {stage === 'searching' && 'Looking for a great match…'}
+                  {stage === 'matched' && 'Match found — setting things up…'}
+                  {stage === 'connecting' && 'Connecting…'}
                 </div>
-              </div>
-            )}
-          </div>
+              )}
 
-          {/* bottom controls */}
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Pill tone={p2p.micOn?'zinc':'rose'} icon={p2p.micOn?<FiMic/>:<FiMicOff/>} onClick={p2p.toggleMic}>
-              {p2p.micOn ? 'Mic On' : 'Mic Off'}
-            </Pill>
-            <Pill tone={p2p.camOn?'zinc':'rose'} icon={p2p.camOn?<FiVideo/>:<FiVideoOff/>} onClick={p2p.toggleCam}>
-              {p2p.camOn ? 'Cam On' : 'Cam Off'}
-            </Pill>
-            <Pill tone="zinc" icon={<FiMonitor/>} onClick={p2p.toggleScreen} disabled={!prefs.allowScreenShare}>
-              {p2p.screenOn ? 'Stop Share' : 'Share Screen'}
-            </Pill>
-            <span className="ml-auto flex items-center gap-2">
-              <Pill tone="zinc" icon={<FiThumbsUp/>} onClick={()=>console.log('liked')}>Good match</Pill>
-              <Pill tone="zinc" icon={<FiThumbsDown/>} onClick={()=>console.log('meh')}>Not my vibe</Pill>
-              <Pill tone="rose" icon={<FiFlag/>} onClick={()=>setReportOpen(true)}>Report</Pill>
-              <Pill tone="rose" icon={<FiSlash/>} onClick={blockPeer}>Block</Pill>
-            </span>
-          </div>
-        </Card>
+              {stage === 'connected' && prefs.safeMode && !bothReady && (
+                <div className="absolute inset-0 grid place-items-center p-3">
+                  <div className="w-full max-w-sm bg-black/60 backdrop-blur-md border border-zinc-800 rounded-xl px-5 py-4 text-center">
+                    <p className="text-zinc-200 font-medium">Safe Start</p>
+                    <p className="text-zinc-400 text-sm mt-1">
+                      Both users must press Ready to reveal video.
+                    </p>
 
-        {/* Local + chat */}
-        <div className="lg:col-span-4 space-y-4">
-          <Card title="You" icon={<FiHeadphones className="text-emerald-400" />}>
-            <div className="relative w-full aspect-video bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden">
-              <video ref={localVideoRef} autoPlay muted playsInline className="absolute inset-0 w-full h-full object-cover"/>
-              {stage!=='connected' && p2p.local==null && (
-                <div className="absolute inset-0 grid place-items-center text-zinc-500 text-sm">
-                  Your camera will appear here
+                    {/* Buttons wrap on phone */}
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                      <Pill
+                        tone="emerald"
+                        icon={<FiCheck />}
+                        onClick={markReady}
+                        disabled={iAmReady}
+                      >
+                        {iAmReady ? 'Waiting…' : 'I am ready'}
+                      </Pill>
+                      <Pill
+                        tone="zinc"
+                        icon={<FiSkipForward />}
+                        onClick={skip}
+                        disabled={skipCooldown > 0}
+                      >
+                        {skipCooldown > 0 ? `Skip (${skipCooldown})` : 'Skip'}
+                      </Pill>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
-            <div className="mt-2 text-xs text-zinc-500 flex items-center gap-2">
-              <FiInfo/> Hotkeys: <kbd className="px-1 bg-zinc-800 rounded">M</kbd> mic, <kbd className="px-1 bg-zinc-800 rounded">V</kbd> cam, <kbd className="px-1 bg-zinc-800 rounded">S</kbd> screen, <kbd className="px-1 bg-zinc-800 rounded">Space</kbd> skip
+
+            {/* bottom controls */}
+            <div className="mt-3 flex flex-wrap items-center gap-2 min-w-0">
+              <Pill
+                tone={p2p.micOn ? 'zinc' : 'rose'}
+                icon={p2p.micOn ? <FiMic /> : <FiMicOff />}
+                onClick={p2p.toggleMic}
+              >
+                {p2p.micOn ? 'Mic On' : 'Mic Off'}
+              </Pill>
+
+              <Pill
+                tone={p2p.camOn ? 'zinc' : 'rose'}
+                icon={p2p.camOn ? <FiVideo /> : <FiVideoOff />}
+                onClick={p2p.toggleCam}
+              >
+                {p2p.camOn ? 'Cam On' : 'Cam Off'}
+              </Pill>
+
+              <Pill
+                tone="zinc"
+                icon={<FiMonitor />}
+                onClick={p2p.toggleScreen}
+                disabled={!prefs.allowScreenShare}
+              >
+                {p2p.screenOn ? 'Stop Share' : 'Share Screen'}
+              </Pill>
+
+              {/* On phone: actions drop to a new row. On md+: push to right */}
+              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto md:ml-auto">
+                <Pill tone="zinc" icon={<FiThumbsUp />} onClick={() => console.log('liked')}>
+                  Good match
+                </Pill>
+                <Pill tone="zinc" icon={<FiThumbsDown />} onClick={() => console.log('meh')}>
+                  Not my vibe
+                </Pill>
+                <Pill tone="rose" icon={<FiFlag />} onClick={() => setReportOpen(true)}>
+                  Report
+                </Pill>
+                <Pill tone="rose" icon={<FiSlash />} onClick={blockPeer}>
+                  Block
+                </Pill>
+              </div>
             </div>
           </Card>
 
-          <Card title="Chat" icon={<FiMessageSquare className="text-emerald-400"/>} bodyClass="h-[38vh] flex flex-col">
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-              {chat.map(m => (
-                <div key={m.id} className={`text-sm ${m.from==='me'?'text-zinc-200':'text-zinc-300'}`}>
-                  <span className={`${m.from==='me'?'text-emerald-400':'text-fuchsia-400'}`}>{m.from==='me'?'You':'Partner'}</span>: {m.text}
-                </div>
-              ))}
-            </div>
-            <ChatInput onSend={sendChat} disabled={!peer}/>
-          </Card>
+          {/* Local + chat */}
+          <div className="lg:col-span-4 space-y-4 min-w-0">
+            <Card title="You" icon={<FiHeadphones className="text-emerald-400" />}>
+              <div className="relative w-full aspect-video bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden min-w-0">
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                {stage !== 'connected' && p2p.local == null && (
+                  <div className="absolute inset-0 grid place-items-center text-zinc-500 text-sm px-4 text-center">
+                    Your camera will appear here
+                  </div>
+                )}
+              </div>
+
+              {/* Wrap hotkeys text on phone */}
+              <div className="mt-2 text-xs text-zinc-500 flex flex-wrap items-center gap-2 min-w-0">
+                <FiInfo /> <span>Hotkeys:</span>
+                <kbd className="px-1 bg-zinc-800 rounded">M</kbd> <span>mic,</span>
+                <kbd className="px-1 bg-zinc-800 rounded">V</kbd> <span>cam,</span>
+                <kbd className="px-1 bg-zinc-800 rounded">S</kbd> <span>screen,</span>
+                <kbd className="px-1 bg-zinc-800 rounded">Space</kbd> <span>skip</span>
+              </div>
+            </Card>
+
+            <Card
+              title="Chat"
+              icon={<FiMessageSquare className="text-emerald-400" />}
+              bodyClass="flex flex-col min-w-0"
+            >
+              {/* Use a smaller height on phones, taller on larger */}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[220px] sm:min-h-[300px] lg:h-[38vh] min-w-0">
+                {chat.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`text-sm min-w-0 break-words ${
+                      m.from === 'me' ? 'text-zinc-200' : 'text-zinc-300'
+                    }`}
+                  >
+                    <span className={m.from === 'me' ? 'text-emerald-400' : 'text-fuchsia-400'}>
+                      {m.from === 'me' ? 'You' : 'Partner'}
+                    </span>
+                    : {m.text}
+                  </div>
+                ))}
+              </div>
+
+              <ChatInput onSend={sendChat} disabled={!peer} />
+            </Card>
+          </div>
         </div>
-      </div>
+
 
       {/* report modal */}
       {reportOpen && (
