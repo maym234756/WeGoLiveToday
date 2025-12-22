@@ -11,6 +11,7 @@ import CreatorToolPage from '@/components/dashboard/CreatorToolPage';
 import ExtensionPage from '@/components/dashboard/ExtensionPage';
 import KnowledgeBasePage from '@/components/dashboard/KnowledgeBasePage';
 import FollowersPage from '@/components/dashboard/FollowersPage';
+import ModeratorsPage from '@/components/dashboard/ModeratorsPage';
 
 export default function DashboardSubPage() {
   const params = useParams<{ slug?: string[] | string }>();
@@ -63,7 +64,7 @@ export default function DashboardSubPage() {
           case 'chat':
             return <h1>💬 Chat</h1>;
           case 'mods':
-            return <h1>🛡️ Moderators</h1>;
+            return <ModeratorsPage />;
           default:
             return (
               <h1>
@@ -99,9 +100,9 @@ export default function DashboardSubPage() {
   };
 
   return (
-    <div className="w-full min-w-0">
+    <div className="w-full min-w-0 overflow-x-hidden">
       {/* Mobile-safe padding + prevents “wide component breaks layout” */}
-      <div className="min-h-[60vh] w-full min-w-0 px-2 sm:px-4 py-3 overflow-x-auto">
+      <div className="min-h-[60vh] w-full min-w-0 px-2 py-3 sm:px-4 overflow-x-auto">
         {renderContent()}
       </div>
     </div>
