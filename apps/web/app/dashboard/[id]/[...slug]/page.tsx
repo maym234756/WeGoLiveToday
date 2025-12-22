@@ -14,6 +14,7 @@ import FollowersPage from '@/components/dashboard/FollowersPage';
 import ModeratorsPage from '@/components/dashboard/ModeratorsPage';
 import ChatPage from '@/components/dashboard/ChatPage';
 import RevenuePage from '@/components/dashboard/RevenuePage';
+import ViewerRewardsPage from '@/components/dashboard/ViewerRewardPage';
 
 export default function DashboardSubPage() {
   const params = useParams<{ slug?: string[] | string }>();
@@ -39,7 +40,7 @@ export default function DashboardSubPage() {
         return <OneonOnePage />;
 
       case 'rewards':
-        return <h1>🎁 Viewer Rewards</h1>;
+        return <ViewerRewardsPage />;
 
       case 'tools':
         return <CreatorToolPage />;
