@@ -86,7 +86,6 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
       );
     }
 
-    // Apply sorting
     const out = items.slice();
     if (sort === 'top') out.sort((a, b) => b.viewers - a.viewers);
     if (sort === 'trending') out.sort((a, b) => (b.viewers % 100) - (a.viewers % 100));
@@ -103,13 +102,14 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
     return sorted.slice(0, 4);
   }, [safeInitialStreams]);
 
+  // Chunking is fine; the grid below determines wrapping by breakpoint.
   const rows = chunkArray(visible, 4);
 
   const hasFilters =
     category !== 'Featured' || sort !== 'top' || sfwOnly || query.trim().length > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="w-full min-w-0 space-y-4">
       <CategoryStrip
         categories={[...CATEGORIES]}
         active={category}
@@ -161,20 +161,30 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
         <>
           <div className="flex flex-col gap-6">
             {rows.map((group, index) => (
-              <div key={index} className="relative border border-zinc-700 rounded-lg p-4">
-                <div className="absolute top-2 left-4 text-sm font-medium text-blue-400 hover:underline">
-                  <Link href={`/section/${index + 1}`}>Section {index + 1}</Link>
-                </div>
-                <div className="absolute top-2 right-4 text-sm text-zinc-400">
-                  Top Row {index + 1}
+              <section
+                key={index}
+                className="w-full min-w-0 rounded-lg border border-zinc-700 bg-zinc-950/30 p-3 sm:p-4"
+              >
+                {/* ✅ Mobile-safe header: no absolute positioning, so nothing overlaps */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Link
+                    href={`/section/${index + 1}`}
+                    className="text-sm font-medium text-blue-400 hover:underline"
+                  >
+                    Section {index + 1}
+                  </Link>
+                  <div className="text-xs text-zinc-400">Row {index + 1}</div>
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-8">
+                {/* ✅ Responsive grid that wraps cleanly on phones */}
+                <div className="mt-3 grid min-w-0 gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {group.map((s) => (
-                    <StreamCard key={s.id} s={s} />
+                    <div key={s.id} className="min-w-0">
+                      <StreamCard s={s} />
+                    </div>
                   ))}
                 </div>
-              </div>
+              </section>
             ))}
           </div>
 
@@ -182,7 +192,7 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
             <div className="mt-4 flex justify-center">
               <button
                 onClick={() => setLimit((n) => n + 12)}
-                className="btn btn-ghost border border-zinc-800 bg-zinc-900 px-4 hover:bg-zinc-800/70"
+                className="btn btn-ghost w-full sm:w-auto border border-zinc-800 bg-zinc-900 px-4 hover:bg-zinc-800/70"
               >
                 Load more
               </button>
@@ -193,11 +203,13 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
         <>
           <EmptyState />
           {suggestions.length > 0 && (
-            <div className="space-y-2 border border-zinc-800 rounded-lg p-4 bg-zinc-950">
+            <div className="w-full min-w-0 space-y-2 rounded-lg border border-zinc-800 bg-zinc-950 p-4">
               <h3 className="text-sm font-semibold text-zinc-300">Recommended for you</h3>
-              <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid min-w-0 gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {suggestions.map((s) => (
-                  <StreamCard key={s.id} s={s} />
+                  <div key={s.id} className="min-w-0">
+                    <StreamCard s={s} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -216,9 +228,9 @@ function chunkArray<T>(array: T[], size: number): T[][] {
 
 function SkeletonGrid() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="rounded-lg border border-zinc-800 bg-zinc-900/40">
+        <div key={i} className="min-w-0 rounded-lg border border-zinc-800 bg-zinc-900/40">
           <div className="aspect-video w-full animate-pulse rounded-md bg-zinc-800" />
           <div className="space-y-2 p-3">
             <div className="h-4 w-3/4 animate-pulse rounded bg-zinc-800" />
