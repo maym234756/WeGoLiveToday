@@ -85,7 +85,7 @@ export default function Sidebar() {
     {
       label: 'Monetization',
       icon: '💰',
-      badge: 'NEW',
+      badge: '',
       children: [
         { label: 'Revenue', href: `/dashboard/${userId}/monetization/revenue` },
         { label: 'Subs', href: `/dashboard/${userId}/monetization/subscribers` },
@@ -98,14 +98,14 @@ export default function Sidebar() {
       label: 'Channel Settings',
       href: `/dashboard/${userId}/moderation`,
       icon: '⚙️',
-      badge: 'NEW',
+      badge: '',
     },
 
     {
       label: 'Viewer Rewards',
       href: `/dashboard/${userId}/rewards`,
       icon: '🎁',
-      badge: 'NEW',
+      badge: '',
     },
 
     {
