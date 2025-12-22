@@ -611,7 +611,7 @@ function ExtensionCard({
         <div className="flex flex-wrap items-center gap-2 min-w-0">
           <div className="truncate font-medium">{ext.name}</div>
           {ext.verified && (
-            <Chip color="sky" title="Verified by WeGoLive">
+            <Chip color="sky" title="Verified by WeGoLiveToday">
               <FiShield className="inline mr-1" /> Verified
             </Chip>
           )}
