@@ -156,7 +156,7 @@ function ClipStudioCard() {
   const [start, setStart] = useState(10);
   const [end, setEnd] = useState(45);
   const [title, setTitle] = useState('Epic clutch round');
-  const [preset, setPreset] = useState<'720p'|'1080p'|'vertical'>('vertical');
+  const [preset, setPreset] = useState<'720p' | '1080p' | 'vertical'>('vertical');
   const dur = Math.max(0, end - start);
 
   return (
@@ -166,42 +166,83 @@ function ClipStudioCard() {
       right={<Chip color="zinc">Local demo</Chip>}
     >
       <div className="grid grid-cols-12 gap-4">
-        <div className="col-span-12 lg:col-span-7">
-          <div className="aspect-video rounded-lg border border-zinc-800 bg-zinc-950 grid place-items-center text-zinc-500">Video preview</div>
+        <div className="col-span-12 lg:col-span-7 min-w-0">
+          <div className="aspect-video rounded-lg border border-zinc-800 bg-zinc-950 grid place-items-center text-zinc-500">
+            Video preview
+          </div>
+
           <div className="mt-3">
             <div className="flex items-center justify-between text-xs text-zinc-400">
-              <span>Start {start}s</span><span>End {end}s</span>
+              <span>Start {start}s</span>
+              <span>End {end}s</span>
             </div>
-            <div className="mt-2 flex items-center gap-2">
-              <input type="range" min={0} max={120} value={start} onChange={(e)=>setStart(parseInt(e.target.value,10))}
-                className="flex-1 accent-emerald-500" />
-              <input type="range" min={0} max={120} value={end} onChange={(e)=>setEnd(parseInt(e.target.value,10))}
-                className="flex-1 accent-emerald-500" />
+
+            {/* stack on mobile, side-by-side on sm+ */}
+            <div className="mt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input
+                type="range"
+                min={0}
+                max={120}
+                value={start}
+                onChange={(e) => setStart(parseInt(e.target.value, 10))}
+                className="w-full sm:flex-1 accent-emerald-500"
+              />
+              <input
+                type="range"
+                min={0}
+                max={120}
+                value={end}
+                onChange={(e) => setEnd(parseInt(e.target.value, 10))}
+                className="w-full sm:flex-1 accent-emerald-500"
+              />
             </div>
+
             <div className="text-xs text-zinc-400 mt-1">Length: {dur}s</div>
           </div>
         </div>
-        <div className="col-span-12 lg:col-span-5 space-y-3">
+
+        <div className="col-span-12 lg:col-span-5 min-w-0 space-y-3">
           <LabeledInput label="Clip title" value={title} onChange={setTitle} />
+
           <div>
             <div className="text-sm text-zinc-400 mb-1">Export preset</div>
-            <div className="flex gap-2">
-              {(['720p','1080p','vertical'] as const).map(p => (
-                <Pill key={p} tone={preset===p?'emerald':'zinc'} onClick={()=>setPreset(p)}>{p.toUpperCase()}</Pill>
+
+            {/* wrap buttons on mobile */}
+            <div className="flex flex-wrap gap-2">
+              {(['720p', '1080p', 'vertical'] as const).map((p) => (
+                <Pill
+                  key={p}
+                  tone={preset === p ? 'emerald' : 'zinc'}
+                  onClick={() => setPreset(p)}
+                >
+                  {p.toUpperCase()}
+                </Pill>
               ))}
             </div>
           </div>
-          <div className="flex gap-2">
-            <Pill tone="emerald" icon={<FiDownload />}>Export</Pill>
-            <Pill tone="zinc" icon={<FiUpload />}>Upload</Pill>
-            <Pill tone="zinc" icon={<FiTag />}>Hashtags</Pill>
+
+          {/* wrap action buttons on mobile */}
+          <div className="flex flex-wrap gap-2">
+            <Pill tone="emerald" icon={<FiDownload />}>
+              Export
+            </Pill>
+            <Pill tone="zinc" icon={<FiUpload />}>
+              Upload
+            </Pill>
+            <Pill tone="zinc" icon={<FiTag />}>
+              Hashtags
+            </Pill>
           </div>
-          <div className="text-xs text-zinc-400">Pro idea: auto-detect hype moments to propose clip ranges.</div>
+
+          <div className="text-xs text-zinc-400">
+            Pro idea: auto-detect hype moments to propose clip ranges.
+          </div>
         </div>
       </div>
     </Card>
   );
 }
+
 
 /* — Overlay Studio — quick slots + shareable URL for browser-source */
 function OverlayStudioCard() {
