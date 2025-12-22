@@ -10,12 +10,16 @@ import OneonOnePage from '@/components/dashboard/OneonOnePage';
 import CreatorToolPage from '@/components/dashboard/CreatorToolPage';
 import ExtensionPage from '@/components/dashboard/ExtensionPage';
 import KnowledgeBasePage from '@/components/dashboard/KnowledgeBasePage';
+
 import FollowersPage from '@/components/dashboard/FollowersPage';
 import ModeratorsPage from '@/components/dashboard/ModeratorsPage';
 import ChatPage from '@/components/dashboard/ChatPage';
+
 import RevenuePage from '@/components/dashboard/RevenuePage';
 import ViewerRewardsPage from '@/components/dashboard/ViewerRewardPage';
+
 import AccountPage from '@/components/dashboard/AccountPage';
+import StreamSettingsPage from '@/components/dashboard/StreamSettingsPage';
 
 export default function DashboardSubPage() {
   const params = useParams<{ slug?: string[] | string }>();
@@ -27,7 +31,7 @@ export default function DashboardSubPage() {
     ? [params.slug as string]
     : [];
 
-  const [section, subSection] = slugArr; // e.g. 'community', 'followers'
+  const [section, subSection] = slugArr; // e.g. 'settings', 'stream'
 
   const renderContent = () => {
     switch (section) {
@@ -63,7 +67,7 @@ export default function DashboardSubPage() {
           case 'account':
             return <AccountPage />;
           case 'stream':
-            return <h1>🎥 Stream Settings</h1>;
+            return <StreamSettingsPage />;
           case 'security':
             return <h1>🔒 Security</h1>;
           default:
