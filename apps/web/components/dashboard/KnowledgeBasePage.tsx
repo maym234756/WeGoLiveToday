@@ -294,6 +294,8 @@ function Kbd({ children }: { children: React.ReactNode }) {
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
    │ 4) KNOWLEDGE BASE CONTENT (mock data; wire to API later)                   │
+   │    - More categories + “platform essentials” pinned docs                   │
+   │    - Articles have phone-safe markup: min-w-0, break-words, flex-wrap      │
    ╰────────────────────────────────────────────────────────────────────────────╯ */
 const KB: KBData = {
   categories: [
@@ -328,19 +330,33 @@ const KB: KBData = {
       description: 'Revenue basics, pricing, payouts, and safe growth.',
     },
     {
+      id: 'creator-store',
+      title: 'Creator Store (Apps)',
+      icon: <FiTool className="text-emerald-400" />,
+      description: 'Install apps, permissions, updates, and trusted packs.',
+    },
+    {
+      id: 'account-security',
+      title: 'Account & Security',
+      icon: <FiShield className="text-emerald-400" />,
+      description: '2FA, sessions, recovery, and security best practices.',
+    },
+    {
       id: 'troubleshooting',
       title: 'Troubleshooting',
       icon: <FiAlertCircle className="text-emerald-400" />,
       description: 'Fix common issues quickly with proven steps.',
     },
   ],
+
   articles: [
+    /* ───────────────────────────── Getting Started ───────────────────────────── */
     {
       id: 'create-first-stream',
       categoryId: 'getting-started',
       title: 'Create your first stream',
       summary: 'Title, category, tags, and one-click “Go Live”.',
-      tags: ['setup', 'title', 'go live'],
+      tags: ['setup', 'title', 'go live', 'checklist'],
       lastUpdated: '2025-11-15',
       difficulty: 'Beginner',
       pinned: true,
@@ -349,7 +365,7 @@ const KB: KBData = {
           id: 'overview',
           heading: 'Overview',
           body: (
-            <p className="text-sm text-zinc-300">
+            <p className="text-sm text-zinc-300 break-words">
               Open <strong>My Streams</strong>, set your <em>Title</em>, <em>Category</em>, and <em>Tags</em>. Connect mic/cam,
               preview, then press <strong>Go Live</strong>.
             </p>
@@ -359,7 +375,7 @@ const KB: KBData = {
           id: 'steps',
           heading: 'Steps',
           body: (
-            <ol className="list-decimal pl-5 space-y-2 text-sm text-zinc-300">
+            <ol className="list-decimal pl-5 space-y-2 text-sm text-zinc-300 break-words">
               <li>
                 Navigate to <span className="text-emerald-400">My Streams</span>.
               </li>
@@ -377,13 +393,14 @@ const KB: KBData = {
           id: 'pro-tips',
           heading: 'Pro tips',
           body: (
-            <div className="text-sm text-zinc-300 space-y-2">
-              <p>
-                Add a “Pinned Safety Message” in chat and set a slow-mode baseline during high traffic. Your channel stays clean without feeling restrictive.
+            <div className="text-sm text-zinc-300 space-y-2 min-w-0">
+              <p className="break-words">
+                Add a pinned chat rule and set a slow-mode baseline during high traffic. Your channel stays clean without
+                feeling restrictive.
               </p>
-              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3 min-w-0">
                 <div className="text-xs text-zinc-400 mb-1">Quick hotkeys</div>
-                <div className="flex flex-wrap gap-2 text-xs">
+                <div className="flex flex-wrap gap-2 text-xs min-w-0">
                   <span className="px-2 py-0.5 bg-zinc-800 rounded">G – Go Live</span>
                   <span className="px-2 py-0.5 bg-zinc-800 rounded">M – Mic</span>
                   <span className="px-2 py-0.5 bg-zinc-800 rounded">V – Cam</span>
@@ -393,8 +410,52 @@ const KB: KBData = {
           ),
         },
       ],
-      related: ['scene-basics', 'starter-safety-pack'],
+      related: ['scene-basics', 'starter-safety-pack', 'stream-health-panel'],
     },
+
+    {
+      id: 'go-live-checklist',
+      categoryId: 'getting-started',
+      title: 'Creator checklist (pre-flight)',
+      summary: 'A fast checklist you can run before every stream.',
+      tags: ['checklist', 'quality', 'audio', 'scenes'],
+      lastUpdated: '2025-11-21',
+      difficulty: 'Beginner',
+      pinned: true,
+      sections: [
+        {
+          id: 'list',
+          heading: 'Pre-flight checklist',
+          body: (
+            <ul className="list-disc pl-5 space-y-2 text-sm text-zinc-300 break-words">
+              <li>Audio: speak test + check levels (avoid clipping).</li>
+              <li>Scene: “Main” + “BRB” + “Ending” ready.</li>
+              <li>Chat: slow-mode baseline + link filtering.</li>
+              <li>Alerts: test one follow/sub/tip event.</li>
+              <li>Title/tags: accurate + searchable.</li>
+            </ul>
+          ),
+        },
+        {
+          id: 'fast-fixes',
+          heading: 'Fast fixes (safe + reversible)',
+          body: (
+            <div className="text-sm text-zinc-300 space-y-2 min-w-0">
+              <p className="break-words">
+                Use <strong>Quick Fixes</strong> for safe actions like toggling captions or slow-mode. These should be reversible
+                and logged for support.
+              </p>
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-xs text-zinc-400 break-words">
+                Tip: keep a “Known Good” preset: bitrate, FPS, and ingest region that you know works.
+              </div>
+            </div>
+          ),
+        },
+      ],
+      related: ['fix-latency', 'starter-safety-pack'],
+    },
+
+    /* ───────────────────────────── Studio & Scenes ───────────────────────────── */
     {
       id: 'scene-basics',
       categoryId: 'studio',
@@ -408,7 +469,7 @@ const KB: KBData = {
           id: 'core',
           heading: 'Core setup',
           body: (
-            <div className="space-y-2 text-sm text-zinc-300">
+            <div className="space-y-2 text-sm text-zinc-300 break-words">
               <p>
                 Use the Scene grid to switch between <em>Main</em>, <em>Just Chatting</em>, <em>BRB</em>, and <em>Ending</em>.
                 Choose <strong>Cut</strong> or <strong>Fade</strong> transitions.
@@ -424,9 +485,9 @@ const KB: KBData = {
           id: 'hotkeys',
           heading: 'Hotkeys',
           body: (
-            <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3 min-w-0">
               <div className="text-xs text-zinc-400 mb-1">Hotkeys</div>
-              <div className="flex flex-wrap gap-2 text-xs">
+              <div className="flex flex-wrap gap-2 text-xs min-w-0">
                 <span className="px-2 py-0.5 bg-zinc-800 rounded">1..4 – Switch scene</span>
                 <span className="px-2 py-0.5 bg-zinc-800 rounded">C – Cut</span>
                 <span className="px-2 py-0.5 bg-zinc-800 rounded">F – Fade</span>
@@ -436,13 +497,55 @@ const KB: KBData = {
           ),
         },
       ],
+      related: ['overlay-browser-source'],
     },
+
+    {
+      id: 'overlay-browser-source',
+      categoryId: 'studio',
+      title: 'Overlays as browser sources',
+      summary: 'How overlays work, where to copy URLs, and how to keep them stable.',
+      tags: ['overlays', 'browser source', 'obs', 'studio'],
+      lastUpdated: '2025-11-26',
+      difficulty: 'Intermediate',
+      sections: [
+        {
+          id: 'concept',
+          heading: 'How it works',
+          body: (
+            <div className="text-sm text-zinc-300 space-y-2 min-w-0">
+              <p className="break-words">
+                Overlays are usually rendered in a browser source (Studio / OBS). Keep the overlay URL stable and treat it like a
+                “display endpoint”.
+              </p>
+              <p className="text-xs text-zinc-400 break-words">
+                Best practice: don’t hardcode sizes in the overlay; use responsive layout so it fits 16:9 and vertical.
+              </p>
+            </div>
+          ),
+        },
+        {
+          id: 'reliability',
+          heading: 'Reliability',
+          body: (
+            <ul className="list-disc pl-5 space-y-2 text-sm text-zinc-300 break-words">
+              <li>Use a single overlay URL per scene (avoid duplicates).</li>
+              <li>Prefer “cache + reconnect” logic (don’t blank the screen on short drops).</li>
+              <li>Keep heavy images optimized; overlays should stay lightweight.</li>
+            </ul>
+          ),
+        },
+      ],
+      related: ['alerts-setup'],
+    },
+
+    /* ───────────────────────────── Alerts & Events ───────────────────────────── */
     {
       id: 'alerts-setup',
       categoryId: 'alerts',
       title: 'Configure alerts',
       summary: 'Route follows, subs, tips, raids to overlays and chat.',
-      tags: ['alerts', 'webhooks', 'overlay'],
+      tags: ['alerts', 'webhooks', 'overlay', 'testing'],
       lastUpdated: '2025-11-18',
       difficulty: 'Intermediate',
       pinned: true,
@@ -451,7 +554,7 @@ const KB: KBData = {
           id: 'connect',
           heading: 'Connect providers',
           body: (
-            <p className="text-sm text-zinc-300">
+            <p className="text-sm text-zinc-300 break-words">
               Open <strong>Alerts</strong>, connect providers, pick a theme, and test events. Add rate limits to prevent spam.
             </p>
           ),
@@ -460,25 +563,59 @@ const KB: KBData = {
           id: 'routing',
           heading: 'Routing and reliability',
           body: (
-            <div className="text-sm text-zinc-300 space-y-2">
-              <p>
+            <div className="text-sm text-zinc-300 space-y-2 min-w-0">
+              <p className="break-words">
                 Route high-signal events to overlays and low-signal events to an “event inbox” for review. Keep chat readable.
               </p>
-              <p className="text-xs text-zinc-400">
-                Advanced: route to Webhooks (spec coming soon).
-              </p>
+              <p className="text-xs text-zinc-400 break-words">Advanced: route to Webhooks (spec coming soon).</p>
             </div>
           ),
         },
       ],
-      related: ['starter-safety-pack'],
+      related: ['starter-safety-pack', 'event-inbox'],
     },
+
+    {
+      id: 'event-inbox',
+      categoryId: 'alerts',
+      title: 'Event Inbox (anti-spam routing)',
+      summary: 'Keep overlays clean by separating high-signal from noisy events.',
+      tags: ['alerts', 'spam', 'routing', 'reliability'],
+      lastUpdated: '2025-12-01',
+      difficulty: 'Intermediate',
+      sections: [
+        {
+          id: 'why',
+          heading: 'Why it matters',
+          body: (
+            <p className="text-sm text-zinc-300 break-words">
+              If everything hits the overlay, viewers tune out. The Event Inbox keeps your stream “signal-forward” while still
+              recording all events for analytics.
+            </p>
+          ),
+        },
+        {
+          id: 'rules',
+          heading: 'Suggested routing rules',
+          body: (
+            <ul className="list-disc pl-5 space-y-2 text-sm text-zinc-300 break-words">
+              <li>Overlay: first-time subs, large tips, raids above a threshold.</li>
+              <li>Inbox: small tips spam, repeat follow bot waves, low-impact events.</li>
+              <li>Chat: optional summary message every N minutes.</li>
+            </ul>
+          ),
+        },
+      ],
+      related: ['alerts-setup'],
+    },
+
+    /* ───────────────────────────── Safety & Moderation ───────────────────────────── */
     {
       id: 'starter-safety-pack',
       categoryId: 'safety',
       title: 'Starter Safety Pack',
       summary: 'Recommended baseline: slow-mode, link rules, and escalation flow.',
-      tags: ['safety', 'moderation', 'slowmode', 'links'],
+      tags: ['safety', 'moderation', 'slowmode', 'links', 'liability'],
       lastUpdated: '2025-11-20',
       difficulty: 'Beginner',
       pinned: true,
@@ -487,7 +624,7 @@ const KB: KBData = {
           id: 'baseline',
           heading: 'Baseline settings',
           body: (
-            <ul className="list-disc pl-5 space-y-2 text-sm text-zinc-300">
+            <ul className="list-disc pl-5 space-y-2 text-sm text-zinc-300 break-words">
               <li>Enable link filtering (allowlist domains you trust).</li>
               <li>Set slow-mode to 2–4 seconds during peaks.</li>
               <li>Require email verification for first-time chatters (optional).</li>
@@ -499,20 +636,364 @@ const KB: KBData = {
           id: 'liability',
           heading: 'Liability-friendly moderation',
           body: (
-            <p className="text-sm text-zinc-300">
-              Keep an audit trail: show “why” a message was flagged (spam/link/harassment). That reduces disputes and protects the platform.
+            <div className="text-sm text-zinc-300 space-y-2 min-w-0">
+              <p className="break-words">
+                Keep an audit trail: show “why” a message was flagged (spam/link/harassment). That reduces disputes and protects
+                the platform.
+              </p>
+              <p className="text-xs text-zinc-400 break-words">
+                Safety note: never expose private user data in public mod notes. Keep notes internal and minimal.
+              </p>
+            </div>
+          ),
+        },
+      ],
+      related: ['moderator-roles', 'reporting-abuse', 'toggle-slowmode-guide', 'fix-latency'],
+    },
+
+    {
+      id: 'moderator-roles',
+      categoryId: 'safety',
+      title: 'Moderator roles and permissions',
+      summary: 'Least-privilege setup: what mods can do and what should require owner approval.',
+      tags: ['mods', 'permissions', 'safety', 'audit'],
+      lastUpdated: '2025-12-03',
+      difficulty: 'Intermediate',
+      pinned: true,
+      sections: [
+        {
+          id: 'principle',
+          heading: 'Least privilege',
+          body: (
+            <p className="text-sm text-zinc-300 break-words">
+              Give moderators only what they need. Keep high-risk actions (perma-ban, link allowlist edits, payout changes) for
+              the owner or trusted leads.
+            </p>
+          ),
+        },
+        {
+          id: 'suggested',
+          heading: 'Suggested role tiers',
+          body: (
+            <div className="text-sm text-zinc-300 space-y-2 min-w-0">
+              <ul className="list-disc pl-5 space-y-2 break-words">
+                <li>
+                  <strong>Chat Mod:</strong> timeout, delete message, slow-mode adjustments (bounded).
+                </li>
+                <li>
+                  <strong>Safety Lead:</strong> manage allowlists, escalation review queue, appeal responses.
+                </li>
+                <li>
+                  <strong>Owner:</strong> bans, payout settings, policy toggles, and logs export.
+                </li>
+              </ul>
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-xs text-zinc-400 break-words">
+                Tip: enable “Reason required” for timeouts above 5 minutes.
+              </div>
+            </div>
+          ),
+        },
+      ],
+      related: ['starter-safety-pack'],
+    },
+
+    {
+      id: 'reporting-abuse',
+      categoryId: 'safety',
+      title: 'Reporting abuse (creator + viewer flow)',
+      summary: 'How reports should work, what gets logged, and how to keep it defensible.',
+      tags: ['reports', 'safety', 'policy', 'liability'],
+      lastUpdated: '2025-12-05',
+      difficulty: 'Advanced',
+      sections: [
+        {
+          id: 'flow',
+          heading: 'Recommended flow',
+          body: (
+            <ol className="list-decimal pl-5 space-y-2 text-sm text-zinc-300 break-words">
+              <li>Viewer reports message → system captures context window (e.g., ±10 messages).</li>
+              <li>Automod triage → severity + category → queue.</li>
+              <li>Mod review → action + reason code.</li>
+              <li>Appeal (optional) → internal notes + outcome.</li>
+            </ol>
+          ),
+        },
+        {
+          id: 'logs',
+          heading: 'What to log (and what not to)',
+          body: (
+            <div className="text-sm text-zinc-300 space-y-2 min-w-0">
+              <p className="break-words">
+                Log action type, reason code, timestamp, and minimal context. Avoid storing sensitive data unless required.
+              </p>
+              <p className="text-xs text-zinc-400 break-words">
+                Keep logs consistent and exportable—this protects creators and the platform.
+              </p>
+            </div>
+          ),
+        },
+      ],
+      related: ['starter-safety-pack'],
+    },
+
+    {
+      id: 'toggle-slowmode-guide',
+      categoryId: 'safety',
+      title: 'Slow-mode: when to use it and how to tune it',
+      summary: 'How to keep chat readable without killing engagement.',
+      tags: ['slowmode', 'chat', 'engagement', 'safety'],
+      lastUpdated: '2025-11-29',
+      difficulty: 'Beginner',
+      sections: [
+        {
+          id: 'ranges',
+          heading: 'Recommended ranges',
+          body: (
+            <ul className="list-disc pl-5 space-y-2 text-sm text-zinc-300 break-words">
+              <li>2–4s: normal busy streams</li>
+              <li>5–8s: raids / spikes / heated topics</li>
+              <li>10–15s: sustained spam or bot waves (temporary)</li>
+            </ul>
+          ),
+        },
+        {
+          id: 'feel',
+          heading: 'Make it feel fair',
+          body: (
+            <p className="text-sm text-zinc-300 break-words">
+              Post a pinned message: “Slow-mode is on to keep chat readable.” Transparency reduces conflict.
             </p>
           ),
         },
       ],
-      related: ['fix-latency'],
+      related: ['starter-safety-pack'],
     },
+
+    /* ───────────────────────────── Monetization ───────────────────────────── */
+    {
+      id: 'pricing-micro-subs',
+      categoryId: 'monetization',
+      title: 'Micro-sub pricing that actually works',
+      summary: 'How to price $0.70–$1.80 apps while staying sustainable with fees.',
+      tags: ['pricing', 'stripe', 'apps', 'sustainable'],
+      lastUpdated: '2025-12-08',
+      difficulty: 'Advanced',
+      pinned: true,
+      sections: [
+        {
+          id: 'strategy',
+          heading: 'Pricing strategy',
+          body: (
+            <div className="text-sm text-zinc-300 space-y-2 min-w-0">
+              <p className="break-words">
+                Keep “tiny subs” as impulse buys, but ensure each plan has clear value and low support burden. Bundle related
+                features into “packs” where possible.
+              </p>
+              <ul className="list-disc pl-5 space-y-2 break-words">
+                <li>$0.70–$0.80: lightweight utilities (low compute, low support)</li>
+                <li>$1.50–$1.80: premium automation, analytics, safety upgrades</li>
+              </ul>
+            </div>
+          ),
+        },
+        {
+          id: 'fees',
+          heading: 'Fee awareness (practical)',
+          body: (
+            <p className="text-sm text-zinc-300 break-words">
+              Use Stripe “metered” or bundling if micro-charges get eaten by fees. Consider an “app wallet” later for smoother
+              economics.
+            </p>
+          ),
+        },
+      ],
+      related: ['store-permissions', 'store-trust'],
+    },
+
+    /* ───────────────────────────── Creator Store (Apps) ───────────────────────────── */
+    {
+      id: 'store-install',
+      categoryId: 'creator-store',
+      title: 'Installing apps from Creator Store',
+      summary: 'How installs work, what gets enabled, and how to roll back safely.',
+      tags: ['store', 'install', 'apps', 'rollback'],
+      lastUpdated: '2025-12-10',
+      difficulty: 'Beginner',
+      pinned: true,
+      sections: [
+        {
+          id: 'install',
+          heading: 'Install flow',
+          body: (
+            <ol className="list-decimal pl-5 space-y-2 text-sm text-zinc-300 break-words">
+              <li>Open Creator Store → choose an app.</li>
+              <li>Review permissions (chat read/mod, overlays, audio, etc.).</li>
+              <li>Install → configure → test in Preview.</li>
+              <li>If needed: disable or uninstall (settings remain saved unless you clear them).</li>
+            </ol>
+          ),
+        },
+        {
+          id: 'rollback',
+          heading: 'Safe rollback',
+          body: (
+            <p className="text-sm text-zinc-300 break-words">
+              If an app causes issues, disable it first. Uninstall only if you’re sure. Keep a “Known Good” configuration so you
+              can revert quickly.
+            </p>
+          ),
+        },
+      ],
+      related: ['store-permissions', 'store-trust'],
+    },
+
+    {
+      id: 'store-permissions',
+      categoryId: 'creator-store',
+      title: 'App permissions and risk levels',
+      summary: 'Understand what apps can access and how to reduce liability.',
+      tags: ['permissions', 'security', 'moderation', 'liability'],
+      lastUpdated: '2025-12-11',
+      difficulty: 'Intermediate',
+      pinned: true,
+      sections: [
+        {
+          id: 'levels',
+          heading: 'Risk levels (simple)',
+          body: (
+            <div className="text-sm text-zinc-300 space-y-2 min-w-0">
+              <ul className="list-disc pl-5 space-y-2 break-words">
+                <li>
+                  <strong>Low:</strong> display overlays, read public events, UI helpers.
+                </li>
+                <li>
+                  <strong>Medium:</strong> mic access, analytics events, external integrations.
+                </li>
+                <li>
+                  <strong>High:</strong> moderation actions (timeouts/bans), payments/cart, account settings.
+                </li>
+              </ul>
+              <p className="text-xs text-zinc-400 break-words">
+                Liability tip: require explicit confirmation before enabling high-risk permissions.
+              </p>
+            </div>
+          ),
+        },
+        {
+          id: 'controls',
+          heading: 'Controls you should offer',
+          body: (
+            <ul className="list-disc pl-5 space-y-2 text-sm text-zinc-300 break-words">
+              <li>Per-permission toggles (not all-or-nothing).</li>
+              <li>Audit logs for “high” actions.</li>
+              <li>Kill switch: disable app immediately.</li>
+            </ul>
+          ),
+        },
+      ],
+      related: ['store-trust', 'starter-safety-pack'],
+    },
+
+    {
+      id: 'store-trust',
+      categoryId: 'creator-store',
+      title: 'Verified apps and trust signals',
+      summary: 'How to decide what’s safe to install (and what to avoid).',
+      tags: ['verified', 'security', 'store', 'safety'],
+      lastUpdated: '2025-12-12',
+      difficulty: 'Intermediate',
+      sections: [
+        {
+          id: 'signals',
+          heading: 'Trust signals',
+          body: (
+            <ul className="list-disc pl-5 space-y-2 text-sm text-zinc-300 break-words">
+              <li>Verified publisher badge + clear contact info</li>
+              <li>Transparent permissions + changelog</li>
+              <li>Works in Preview without requiring “high risk” by default</li>
+              <li>Clear data retention policy (even if “no data stored”)</li>
+            </ul>
+          ),
+        },
+      ],
+      related: ['store-permissions'],
+    },
+
+    /* ───────────────────────────── Account & Security ───────────────────────────── */
+    {
+      id: '2fa-setup',
+      categoryId: 'account-security',
+      title: 'Enable 2FA and protect your account',
+      summary: '2FA basics, backup codes, and session hygiene.',
+      tags: ['2fa', 'security', 'account', 'sessions'],
+      lastUpdated: '2025-12-02',
+      difficulty: 'Beginner',
+      pinned: true,
+      sections: [
+        {
+          id: 'why',
+          heading: 'Why 2FA matters',
+          body: (
+            <p className="text-sm text-zinc-300 break-words">
+              Streaming accounts are high-value targets. 2FA + session review prevents takeover and protects payouts.
+            </p>
+          ),
+        },
+        {
+          id: 'best',
+          heading: 'Best practices',
+          body: (
+            <ul className="list-disc pl-5 space-y-2 text-sm text-zinc-300 break-words">
+              <li>Use an authenticator app (avoid SMS when possible).</li>
+              <li>Store backup codes offline.</li>
+              <li>Review active sessions monthly; revoke unknown devices.</li>
+            </ul>
+          ),
+        },
+      ],
+      related: ['restore-account'],
+    },
+
+    {
+      id: 'restore-account',
+      categoryId: 'account-security',
+      title: 'Account recovery (if you get locked out)',
+      summary: 'Recovery steps, what support will ask for, and how to prepare.',
+      tags: ['recovery', 'security', 'support'],
+      lastUpdated: '2025-12-04',
+      difficulty: 'Intermediate',
+      sections: [
+        {
+          id: 'steps',
+          heading: 'Recovery steps',
+          body: (
+            <ol className="list-decimal pl-5 space-y-2 text-sm text-zinc-300 break-words">
+              <li>Use backup codes (if enabled).</li>
+              <li>Reset password and revoke sessions.</li>
+              <li>Contact support with your creator ID + recent login locations.</li>
+            </ol>
+          ),
+        },
+        {
+          id: 'prep',
+          heading: 'Prepare now',
+          body: (
+            <p className="text-sm text-zinc-300 break-words">
+              Keep a verified email, enable 2FA, and record a secure note of your recovery options.
+            </p>
+          ),
+        },
+      ],
+      related: ['2fa-setup'],
+    },
+
+    /* ───────────────────────────── Troubleshooting ───────────────────────────── */
     {
       id: 'fix-latency',
       categoryId: 'troubleshooting',
       title: 'Fix high latency',
       summary: 'Tune bitrate, FPS, and region for stability.',
-      tags: ['latency', 'bitrate', 'fps'],
+      tags: ['latency', 'bitrate', 'fps', 'health'],
       lastUpdated: '2025-10-12',
       difficulty: 'Intermediate',
       sections: [
@@ -520,20 +1001,56 @@ const KB: KBData = {
           id: 'bitrate',
           heading: 'Bitrate & FPS tuning',
           body: (
-            <div className="space-y-2 text-sm text-zinc-300">
-              <p>
-                Reduce bitrate to <strong>4500–6000 kbps</strong> for 1080p60 or <strong>3000–4500</strong> for 720p60. Try a closer ingest region.
+            <div className="space-y-2 text-sm text-zinc-300 min-w-0">
+              <p className="break-words">
+                Reduce bitrate to <strong>4500–6000 kbps</strong> for 1080p60 or <strong>3000–4500</strong> for 720p60. Try a
+                closer ingest region.
               </p>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-zinc-400 break-words">
                 Tip: Use the Health panel to monitor CPU & dropped frames in real-time.
               </p>
             </div>
           ),
         },
       ],
+      related: ['stream-health-panel'],
+    },
+
+    {
+      id: 'stream-health-panel',
+      categoryId: 'troubleshooting',
+      title: 'Stream Health Panel (what to watch live)',
+      summary: 'Dropped frames, CPU, bitrate variance, and when to react.',
+      tags: ['health', 'dropped frames', 'cpu', 'bitrate'],
+      lastUpdated: '2025-12-06',
+      difficulty: 'Intermediate',
+      sections: [
+        {
+          id: 'signals',
+          heading: 'Core signals',
+          body: (
+            <ul className="list-disc pl-5 space-y-2 text-sm text-zinc-300 break-words">
+              <li>Dropped frames rising → lower bitrate or reduce resolution.</li>
+              <li>CPU {'>'} 85% sustained → switch encoder preset or reduce FPS.</li>
+              <li>Bitrate variance → unstable network; consider wired / fallback.</li>
+            </ul>
+          ),
+        },
+        {
+          id: 'quick',
+          heading: 'Quick actions',
+          body: (
+            <p className="text-sm text-zinc-300 break-words">
+              Use safe “Quick Fix” actions where available (e.g., set preferred bitrate). Restart stream if needed.
+            </p>
+          ),
+        },
+      ],
+      related: ['fix-latency'],
     },
   ],
 };
+
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
    │ 5) SAFE “FIX-IT” ACTIONS (simulated; swap for server actions later)        │
@@ -653,7 +1170,9 @@ export default function KnowledgeBasePage() {
     if (sort === 'title') rows.sort((a, b) => a.title.localeCompare(b.title));
     if (sort === 'difficulty') {
       const rank: Record<string, number> = { Beginner: 1, Intermediate: 2, Advanced: 3 };
-      rows.sort((a, b) => (rank[a.difficulty ?? 'Beginner'] ?? 1) - (rank[b.difficulty ?? 'Beginner'] ?? 1));
+      rows.sort(
+        (a, b) => (rank[a.difficulty ?? 'Beginner'] ?? 1) - (rank[b.difficulty ?? 'Beginner'] ?? 1),
+      );
     }
 
     // pinned first (when not searching)
@@ -663,9 +1182,7 @@ export default function KnowledgeBasePage() {
   }, [dq, activeCat, sort]);
 
   const newest = useMemo(() => {
-    return [...KB.articles]
-      .sort((a, b) => +new Date(b.lastUpdated) - +new Date(a.lastUpdated))
-      .slice(0, 4);
+    return [...KB.articles].sort((a, b) => +new Date(b.lastUpdated) - +new Date(a.lastUpdated)).slice(0, 4);
   }, []);
 
   const favoriteArticles = useMemo(() => {
@@ -680,7 +1197,6 @@ export default function KnowledgeBasePage() {
 
   function openArticle(a: Article) {
     setActiveArticleId(a.id);
-    // update recent
     setRecent((prev) => {
       const next = [a.id, ...prev.filter((x) => x !== a.id)];
       return next.slice(0, 20);
@@ -698,7 +1214,7 @@ export default function KnowledgeBasePage() {
     setSort('newest');
   }
 
-  // Keyboard shortcuts (lightweight)
+  // Keyboard shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey) {
@@ -709,15 +1225,13 @@ export default function KnowledgeBasePage() {
         }
       }
       if (e.key === 'Escape') {
-        // close article detail on small screens by clearing selection
-        // (non-destructive; user can reopen from list)
-        // keep subtle: only when tab is KB
-        if (tab === 'kb') setActiveArticleId((cur) => cur);
+        // on mobile, "escape" behaves like "back to list"
+        setActiveArticleId((cur) => (cur ? null : cur));
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [tab, setActiveArticleId]);
+  }, [setActiveArticleId]);
 
   /* ───────────── Assistant routing (naive; swap for real LLM later) ───────────── */
   async function runTool(tool: FixActionId) {
@@ -783,7 +1297,6 @@ export default function KnowledgeBasePage() {
     parts.push('Here’s a fast path:');
     if (match) parts.push(`• Recommended article: **${match.title}**`);
     if (tool) parts.push(`• Optional fix-it action: **${ACTIONS[tool].label}**`);
-
     if (!match && !tool) {
       parts.push('• Try searching with keywords (or pick a category).');
       parts.push('• You can also ask: “Fix lag”, “Enable captions”, or “Toggle slow-mode”.');
@@ -845,6 +1358,8 @@ export default function KnowledgeBasePage() {
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  const hasFilters = activeCat !== 'all' || sort !== 'newest' || dq.trim().length > 0;
+
   /* ────────────────────────────── RENDER ────────────────────────────── */
   return (
     <main className="min-h-screen w-full min-w-0 bg-black text-white max-w-none px-2 sm:px-4 lg:px-6 py-6 sm:py-8">
@@ -853,7 +1368,7 @@ export default function KnowledgeBasePage() {
         <div className="flex items-center gap-3 min-w-0 flex-wrap">
           <span className="text-2xl font-bold text-emerald-400 whitespace-nowrap">📚 Knowledge Base</span>
           <Chip color="zinc" title="Docs + best practices">Help Center</Chip>
-          <Chip color="sky" title="Press / to search">Shortcut: /</Chip>
+          <Chip color="sky" title="Press / to search">Shortcut: <Kbd>/</Kbd></Chip>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -876,8 +1391,8 @@ export default function KnowledgeBasePage() {
       </div>
 
       <div className="grid grid-cols-12 gap-4 min-w-0">
-        {/* LEFT / MAIN COLUMN */}
-        <div className="col-span-12 xl:col-span-8 space-y-4 min-w-0">
+        {/* LEFT / MAIN COLUMN (mobile shows this when tab=kb; desktop always shows) */}
+        <div className={cx('col-span-12 xl:col-span-8 space-y-4 min-w-0', tab === 'assistant' ? 'hidden xl:block' : '')}>
           {/* Search + filter */}
           <Card
             title="Find answers fast"
@@ -922,7 +1437,11 @@ export default function KnowledgeBasePage() {
 
                 <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-zinc-900 border border-zinc-800">
                   <FiTag className="text-zinc-500" />
-                  <select className="bg-transparent text-sm outline-none" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+                  <select
+                    className="bg-transparent text-sm outline-none"
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as SortKey)}
+                  >
                     <option value="newest">Newest</option>
                     <option value="title">Title</option>
                     <option value="difficulty">Difficulty</option>
@@ -933,6 +1452,23 @@ export default function KnowledgeBasePage() {
                   Reset
                 </Pill>
               </div>
+
+              {/* Active filter bar */}
+              {hasFilters && (
+                <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+                  <span className="text-zinc-500">Active:</span>
+                  {dq.trim() && <Chip color="zinc" title="Search query">{dq.trim()}</Chip>}
+                  {activeCat !== 'all' && (
+                    <Chip color="zinc" title="Category">
+                      {KB.categories.find((c) => c.id === activeCat)?.title ?? 'Category'}
+                    </Chip>
+                  )}
+                  {sort !== 'newest' && <Chip color="zinc" title="Sort">{sort}</Chip>}
+                  <button onClick={resetSearch} className="text-emerald-400 hover:underline">
+                    Clear all
+                  </button>
+                </div>
+              )}
 
               {/* Smart suggestions (tags) */}
               <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-400">
@@ -949,6 +1485,71 @@ export default function KnowledgeBasePage() {
               </div>
             </div>
           </Card>
+
+          {/* Mobile-only: Library + What’s new (keeps phone view “complete” without needing right column) */}
+          <div className="xl:hidden grid grid-cols-12 gap-4 min-w-0">
+            <Card
+              title="Your library"
+              icon={<FiClock className="text-emerald-400" />}
+              right={<Chip color="zinc">{favorites.length} saved</Chip>}
+              className="col-span-12 md:col-span-6"
+            >
+              <div className="space-y-3">
+                {favoriteArticles.length === 0 ? (
+                  <div className="text-sm text-zinc-400">Save articles you reference often.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {favoriteArticles.slice(0, 4).map((a) => (
+                      <button
+                        key={a.id}
+                        onClick={() => openArticle(a)}
+                        className="w-full text-left rounded-lg border border-zinc-800 bg-zinc-950 hover:border-zinc-700 px-3 py-2"
+                      >
+                        <div className="text-sm text-zinc-200 truncate">{a.title}</div>
+                        <div className="text-xs text-zinc-400 truncate">{a.summary}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {recentArticles.length > 0 && (
+                  <div>
+                    <div className="text-sm text-zinc-300 mb-2">Recently viewed</div>
+                    <div className="space-y-2">
+                      {recentArticles.slice(0, 3).map((a) => (
+                        <button
+                          key={a.id}
+                          onClick={() => openArticle(a)}
+                          className="w-full text-left rounded-lg border border-zinc-800 bg-zinc-950 hover:border-zinc-700 px-3 py-2"
+                        >
+                          <div className="text-sm text-zinc-200 truncate">{a.title}</div>
+                          <div className="text-xs text-zinc-500">Updated {fmtDate(a.lastUpdated)}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            <Card title="What’s new" icon={<FiZap className="text-emerald-400" />} className="col-span-12 md:col-span-6">
+              <div className="space-y-2">
+                {newest.map((a) => (
+                  <button
+                    key={a.id}
+                    onClick={() => openArticle(a)}
+                    className="w-full text-left rounded-lg border border-zinc-800 bg-zinc-950 hover:border-zinc-700 px-3 py-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm text-zinc-200 truncate">{a.title}</div>
+                      <Chip color="zinc">{fmtDate(a.lastUpdated)}</Chip>
+                    </div>
+                    <div className="text-xs text-zinc-400 break-words mt-1">{a.summary}</div>
+                  </button>
+                ))}
+              </div>
+            </Card>
+          </div>
 
           {/* Categories */}
           <Card title="Browse categories" icon={<FiBook className="text-emerald-400" />}>
@@ -981,21 +1582,19 @@ export default function KnowledgeBasePage() {
             </div>
           </Card>
 
-          {/* Articles list + details */}
+          {/* Articles list + details (mobile behaves like “list -> details” / desktop shows both) */}
           <div className="grid grid-cols-12 gap-4 min-w-0">
             <Card
               title={`Articles (${filteredArticles.length})`}
               icon={<FiBook className="text-emerald-400" />}
-              className="col-span-12 xl:col-span-6"
+              className={cx('col-span-12 xl:col-span-6', article ? 'hidden xl:block' : '')}
               bodyClass="space-y-2"
-              right={
-                <div className="flex items-center gap-2">
-                  <Chip color="zinc" title="Pinned = recommended baseline">Pinned first</Chip>
-                </div>
-              }
+              right={<Chip color="zinc" title="Pinned = recommended baseline">Pinned first</Chip>}
             >
               {filteredArticles.length === 0 && (
-                <div className="text-sm text-zinc-400">No articles found. Try different keywords.</div>
+                <div className="text-sm text-zinc-400">
+                  No articles found. Try different keywords or clear filters.
+                </div>
               )}
 
               {filteredArticles.map((a) => (
@@ -1036,7 +1635,7 @@ export default function KnowledgeBasePage() {
             <Card
               title={article ? article.title : 'Details'}
               icon={<FiInfo className="text-emerald-400" />}
-              className="col-span-12 xl:col-span-6"
+              className={cx('col-span-12 xl:col-span-6', !article ? 'hidden xl:block' : '')}
               right={
                 article ? (
                   <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -1053,6 +1652,17 @@ export default function KnowledgeBasePage() {
                 <div className="text-sm text-zinc-400">Pick an article to view details, TOC, and quick refs.</div>
               ) : (
                 <div className="space-y-4 min-w-0">
+                  {/* Mobile-only back button */}
+                  <div className="xl:hidden">
+                    <button
+                      onClick={() => setActiveArticleId(null)}
+                      className="inline-flex items-center gap-2 text-sm text-zinc-200 hover:text-emerald-300"
+                    >
+                      <FiChevronRight className="rotate-180 text-zinc-400" />
+                      Back to articles
+                    </button>
+                  </div>
+
                   {/* Meta row */}
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -1168,8 +1778,8 @@ export default function KnowledgeBasePage() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN */}
-        <div className="col-span-12 xl:col-span-4 space-y-4 min-w-0">
+        {/* RIGHT COLUMN (mobile shows this when tab=assistant; desktop always shows) */}
+        <div className={cx('col-span-12 xl:col-span-4 space-y-4 min-w-0', tab === 'kb' ? 'hidden xl:block' : '')}>
           {/* Your Library */}
           <Card
             title="Your library"
@@ -1257,7 +1867,8 @@ export default function KnowledgeBasePage() {
             bodyClass="flex flex-col h-[64vh] min-w-0"
           >
             <div className="text-xs text-zinc-400 mb-2">
-              Ask a question or request a <strong>safe</strong> fix-it action. This AI only runs narrowly-scoped, reversible settings.
+              Ask a question or request a <strong>safe</strong> fix-it action. This AI only runs narrowly-scoped,
+              reversible settings.
             </div>
 
             {/* Quick prompts */}
@@ -1336,6 +1947,9 @@ export default function KnowledgeBasePage() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask for help or request a safe fix…"
                 className="flex-1 min-w-0 rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 outline-none focus:border-emerald-600"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && !busy) handleAssistantSend(input);
+                }}
               />
               <Pill
                 tone="emerald"
@@ -1388,6 +2002,7 @@ export default function KnowledgeBasePage() {
     </main>
   );
 }
+
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
    │ 7) SMALL PIECES                                                            │
