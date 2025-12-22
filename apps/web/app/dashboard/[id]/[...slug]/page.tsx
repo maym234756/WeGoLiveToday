@@ -15,6 +15,7 @@ import ModeratorsPage from '@/components/dashboard/ModeratorsPage';
 import ChatPage from '@/components/dashboard/ChatPage';
 import RevenuePage from '@/components/dashboard/RevenuePage';
 import ViewerRewardsPage from '@/components/dashboard/ViewerRewardPage';
+import AccountPage from '@/components/dashboard/AccountPage';
 
 export default function DashboardSubPage() {
   const params = useParams<{ slug?: string[] | string }>();
@@ -51,13 +52,24 @@ export default function DashboardSubPage() {
       case 'extensions':
         return <ExtensionPage />;
 
-      case 'settings':
-        return <h1>⚙️ Settings</h1>;
-
       case 'knowledge':
       case 'knowledge-base':
       case 'help':
         return <KnowledgeBasePage />;
+
+      /* ---------- Settings subsections ---------- */
+      case 'settings': {
+        switch (subSection) {
+          case 'account':
+            return <AccountPage />;
+          case 'stream':
+            return <h1>🎥 Stream Settings</h1>;
+          case 'security':
+            return <h1>🔒 Security</h1>;
+          default:
+            return <h1>⚙️ Settings</h1>;
+        }
+      }
 
       /* ---------- Monetization subsections ---------- */
       case 'monetization': {
