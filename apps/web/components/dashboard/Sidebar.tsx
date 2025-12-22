@@ -112,7 +112,7 @@ export default function Sidebar() {
     },
 
     {
-      label: 'Extensions',
+      label: 'Store',
       href: `/dashboard/${userId}/extensions`,
       icon: '🧩',
     },

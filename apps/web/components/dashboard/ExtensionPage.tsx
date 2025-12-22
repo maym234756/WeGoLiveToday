@@ -316,7 +316,7 @@ const CATALOG: Extension[] = [
 ];
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
-   │ 4) EXTENSION CARD + DETAIL MODAL                                           │
+   │ 4) Store CARD + DETAIL MODAL                                           │
    ╰────────────────────────────────────────────────────────────────────────────╯ */
 function ExtensionCard({
   ext,
