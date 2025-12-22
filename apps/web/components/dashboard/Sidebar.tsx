@@ -144,6 +144,17 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* ✅ Mobile open button (always visible when sidebar is closed) */}
+      {!mobileOpen && (
+        <button
+          aria-label="Open sidebar"
+          onClick={() => setMobileOpen(true)}
+          className="fixed left-3 top-3 z-[60] rounded-md border border-zinc-800 bg-zinc-950/80 p-2 text-zinc-200 backdrop-blur md:hidden"
+        >
+          <FiMenu size={20} />
+        </button>
+      )}
+
       {/* ✅ Mobile backdrop (tap to close) */}
       {mobileOpen && (
         <button
@@ -163,9 +174,10 @@ export default function Sidebar() {
           ${collapsed ? 'md:w-16' : 'md:w-64'}
         `}
       >
-        {/* ✅ Mobile hamburger (opens/closes overlay) */}
+        {/* ✅ Mobile close button (inside the sidebar) */}
         <button
-          onClick={() => setMobileOpen((v) => !v)}
+          aria-label="Close sidebar"
+          onClick={() => setMobileOpen(false)}
           className="mb-6 text-zinc-400 hover:text-white md:hidden"
         >
           <FiMenu size={20} />
@@ -173,6 +185,7 @@ export default function Sidebar() {
 
         {/* ✅ Desktop collapse button */}
         <button
+          aria-label="Collapse sidebar"
           onClick={() => setCollapsed((v) => !v)}
           className="mb-6 hidden md:block text-zinc-400 hover:text-white"
         >
@@ -205,6 +218,7 @@ export default function Sidebar() {
 
                 {!collapsed && item.children && (
                   <button
+                    aria-label={`Toggle ${item.label}`}
                     onClick={() => toggleMenu(item.label)}
                     className="text-zinc-400 hover:text-white"
                   >
