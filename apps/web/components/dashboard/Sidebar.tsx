@@ -43,6 +43,16 @@ export default function Sidebar() {
     setMobileOpen(false);
   }, [pathname]);
 
+  // ✅ Prevent background scroll while mobile sidebar is open
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen]);
+
   const toggleMenu = (label: string) => {
     setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
   };
@@ -144,7 +154,7 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* ✅ Mobile open button (always visible when sidebar is closed) */}
+      {/* ✅ Mobile open button (only when closed) */}
       {!mobileOpen && (
         <button
           aria-label="Open sidebar"
@@ -166,88 +176,96 @@ export default function Sidebar() {
 
       <aside
         className={`
-          bg-zinc-900 text-white h-screen px-4 py-6 transition-all duration-300
           fixed left-0 top-0 z-50
+          bg-zinc-900 text-white
+          transition-all duration-300
           w-64
           md:translate-x-0
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
           ${collapsed ? 'md:w-16' : 'md:w-64'}
+          h-dvh md:h-screen
+          pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]
         `}
       >
-        {/* ✅ Mobile close button (inside the sidebar) */}
-        <button
-          aria-label="Close sidebar"
-          onClick={() => setMobileOpen(false)}
-          className="mb-6 text-zinc-400 hover:text-white md:hidden"
-        >
-          <FiMenu size={20} />
-        </button>
+        {/* ✅ Make interior scrollable correctly */}
+        <div className="flex h-full min-h-0 flex-col px-4 py-6">
+          {/* ✅ Top controls */}
+          <div className="flex items-center justify-between mb-4">
+            {/* Mobile close (inside sidebar) */}
+            <button
+              aria-label="Close sidebar"
+              onClick={() => setMobileOpen(false)}
+              className="text-zinc-400 hover:text-white md:hidden"
+            >
+              <FiMenu size={20} />
+            </button>
 
-        {/* ✅ Desktop collapse button */}
-        <button
-          aria-label="Collapse sidebar"
-          onClick={() => setCollapsed((v) => !v)}
-          className="mb-6 hidden md:block text-zinc-400 hover:text-white"
-        >
-          <FiMenu size={20} />
-        </button>
+            {/* Desktop collapse */}
+            <button
+              aria-label="Collapse sidebar"
+              onClick={() => setCollapsed((v) => !v)}
+              className="hidden md:block text-zinc-400 hover:text-white"
+            >
+              <FiMenu size={20} />
+            </button>
+          </div>
 
-        <nav className="space-y-2">
-          {navItems.map((item) => (
-            <div key={item.label}>
-              <div className="flex items-center justify-between">
-                <Link
-                  href={item.href || '#'}
-                  onClick={() => setMobileOpen(false)} // ✅ close on click (mobile)
-                  className={`flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 ${
-                    pathname === item.href ? 'bg-zinc-800 text-emerald-400' : ''
-                  }`}
-                >
-                  <span className="text-lg">{item.icon || '📁'}</span>
-                  {!collapsed && (
-                    <>
-                      <span>{item.label}</span>
-                      {item.badge && (
-                        <span className="ml-auto text-xs bg-pink-500 text-white rounded-full px-2">
-                          {item.badge}
-                        </span>
-                      )}
-                    </>
-                  )}
-                </Link>
-
-                {!collapsed && item.children && (
-                  <button
-                    aria-label={`Toggle ${item.label}`}
-                    onClick={() => toggleMenu(item.label)}
-                    className="text-zinc-400 hover:text-white"
+          {/* ✅ Scroll container (this fixes phone scrolling + rotation) */}
+          <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 space-y-2">
+            {navItems.map((item) => (
+              <div key={item.label}>
+                <div className="flex items-center justify-between">
+                  <Link
+                    href={item.href || '#'}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 ${
+                      pathname === item.href ? 'bg-zinc-800 text-emerald-400' : ''
+                    }`}
                   >
-                    <FiChevronDown
-                      className={`${
-                        openMenus[item.label] ? 'rotate-180' : ''
-                      } transition-transform`}
-                    />
-                  </button>
+                    <span className="text-lg">{item.icon || '📁'}</span>
+                    {!collapsed && (
+                      <>
+                        <span>{item.label}</span>
+                        {item.badge && (
+                          <span className="ml-auto text-xs bg-pink-500 text-white rounded-full px-2">
+                            {item.badge}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </Link>
+
+                  {!collapsed && item.children && (
+                    <button
+                      aria-label={`Toggle ${item.label}`}
+                      onClick={() => toggleMenu(item.label)}
+                      className="text-zinc-400 hover:text-white"
+                    >
+                      <FiChevronDown
+                        className={`${openMenus[item.label] ? 'rotate-180' : ''} transition-transform`}
+                      />
+                    </button>
+                  )}
+                </div>
+
+                {!collapsed && item.children && openMenus[item.label] && (
+                  <div className="ml-6 mt-1 space-y-1 text-sm text-zinc-400">
+                    {item.children.map((sub) => (
+                      <Link
+                        key={sub.label}
+                        href={sub.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="block px-2 py-1 hover:text-white"
+                      >
+                        {sub.label}
+                      </Link>
+                    ))}
+                  </div>
                 )}
               </div>
-
-              {!collapsed && item.children && openMenus[item.label] && (
-                <div className="ml-6 mt-1 space-y-1 text-sm text-zinc-400">
-                  {item.children.map((sub) => (
-                    <Link
-                      key={sub.label}
-                      href={sub.href}
-                      onClick={() => setMobileOpen(false)} // ✅ close on click (mobile)
-                      className="block px-2 py-1 hover:text-white"
-                    >
-                      {sub.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </nav>
+            ))}
+          </nav>
+        </div>
       </aside>
     </>
   );
