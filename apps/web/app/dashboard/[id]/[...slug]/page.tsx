@@ -2,6 +2,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+
 import AlertsPage from '@/components/dashboard/AlertsPage';
 import MyStreamsPage from '@/components/dashboard/MyStreamPage';
 import ChannelSettingPage from '@/components/dashboard/ChannelSettingPage';
@@ -9,6 +10,7 @@ import OneonOnePage from '@/components/dashboard/OneonOnePage';
 import CreatorToolPage from '@/components/dashboard/CreatorToolPage';
 import ExtensionPage from '@/components/dashboard/ExtensionPage';
 import KnowledgeBasePage from '@/components/dashboard/KnowledgeBasePage';
+import FollowersPage from '@/components/dashboard/FollowersPage';
 
 export default function DashboardSubPage() {
   const params = useParams<{ slug?: string[] | string }>();
@@ -20,7 +22,7 @@ export default function DashboardSubPage() {
     ? [params.slug as string]
     : [];
 
-  const [section, subSection] = slugArr; // e.g. 'content', 'streams'
+  const [section, subSection] = slugArr; // e.g. 'community', 'followers'
 
   const renderContent = () => {
     switch (section) {
@@ -52,6 +54,25 @@ export default function DashboardSubPage() {
       case 'knowledge-base':
       case 'help':
         return <KnowledgeBasePage />;
+
+      /* ---------- My Group subsections ---------- */
+      case 'community': {
+        switch (subSection) {
+          case 'followers':
+            return <FollowersPage />;
+          case 'chat':
+            return <h1>💬 Chat</h1>;
+          case 'mods':
+            return <h1>🛡️ Moderators</h1>;
+          default:
+            return (
+              <h1>
+                📁 Page not found: {section}
+                {subSection ? `/${subSection}` : ''}
+              </h1>
+            );
+        }
+      }
 
       /* ---------- My Content subsections ---------- */
       case 'content': {
