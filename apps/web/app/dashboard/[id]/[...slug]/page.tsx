@@ -12,6 +12,7 @@ import ExtensionPage from '@/components/dashboard/ExtensionPage';
 import KnowledgeBasePage from '@/components/dashboard/KnowledgeBasePage';
 import FollowersPage from '@/components/dashboard/FollowersPage';
 import ModeratorsPage from '@/components/dashboard/ModeratorsPage';
+import ChatPage from '@/components/dashboard/ChatPage';
 
 export default function DashboardSubPage() {
   const params = useParams<{ slug?: string[] | string }>();
@@ -31,7 +32,7 @@ export default function DashboardSubPage() {
         return <AlertsPage />;
 
       case 'analytics':
-        return <h1 className="text-emerald-400 font-bold">📊 KPI</h1>;
+        return <h1 className="font-bold text-emerald-400">📊 KPI</h1>;
 
       case 'stream-together':
         return <OneonOnePage />;
@@ -62,7 +63,7 @@ export default function DashboardSubPage() {
           case 'followers':
             return <FollowersPage />;
           case 'chat':
-            return <h1>💬 Chat</h1>;
+            return <ChatPage />;
           case 'mods':
             return <ModeratorsPage />;
           default:
@@ -102,7 +103,7 @@ export default function DashboardSubPage() {
   return (
     <div className="w-full min-w-0 overflow-x-hidden">
       {/* Mobile-safe padding + prevents “wide component breaks layout” */}
-      <div className="min-h-[60vh] w-full min-w-0 px-2 py-3 sm:px-4 overflow-x-auto">
+      <div className="min-h-[60vh] w-full min-w-0 overflow-x-auto px-2 py-3 sm:px-4">
         {renderContent()}
       </div>
     </div>
