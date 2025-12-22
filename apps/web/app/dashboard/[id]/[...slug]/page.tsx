@@ -1,15 +1,14 @@
-// apps/web/app/dashboard/[id]/[...slug]/page.tsx  (or your existing slug page)
+// apps/web/app/dashboard/[id]/[...slug]/page.tsx
 'use client';
 
 import { useParams } from 'next/navigation';
 import AlertsPage from '@/components/dashboard/AlertsPage';
-import MyStreamsPage from '@/components/dashboard/MyStreamPage'; // <- make sure this exists
-import ChannelSettingPage from '@/components/dashboard/ChannelSettingPage'
-import OneonOnePage from '@/components/dashboard/OneonOnePage'
-import CreatorToolPage from '@/components/dashboard/CreatorToolPage'
-import ExtensionPage from '@/components/dashboard/ExtensionPage'
-import KnowledgeBasePage from '@/components/dashboard/KnowledgeBasePage'
-// import AnalyticsDashboard from '@/app/dashboard/[id]/analytics/page'; // optional if you want
+import MyStreamsPage from '@/components/dashboard/MyStreamPage';
+import ChannelSettingPage from '@/components/dashboard/ChannelSettingPage';
+import OneonOnePage from '@/components/dashboard/OneonOnePage';
+import CreatorToolPage from '@/components/dashboard/CreatorToolPage';
+import ExtensionPage from '@/components/dashboard/ExtensionPage';
+import KnowledgeBasePage from '@/components/dashboard/KnowledgeBasePage';
 
 export default function DashboardSubPage() {
   const params = useParams<{ slug?: string[] | string }>();
@@ -29,7 +28,6 @@ export default function DashboardSubPage() {
         return <AlertsPage />;
 
       case 'analytics':
-        // return <AnalyticsDashboard />; // if you want to render the real KPI page
         return <h1 className="text-emerald-400 font-bold">📊 KPI</h1>;
 
       case 'stream-together':
@@ -55,11 +53,11 @@ export default function DashboardSubPage() {
       case 'help':
         return <KnowledgeBasePage />;
 
-      /* ---------- NEW: My Content subsections ---------- */
+      /* ---------- My Content subsections ---------- */
       case 'content': {
         switch (subSection) {
           case 'streams':
-            return <MyStreamsPage />; // <-- /dashboard/:id/content/streams
+            return <MyStreamsPage />;
           case 'past-broadcasts':
             return <h1>📼 Past Broadcasts</h1>;
           case 'clips':
@@ -79,5 +77,12 @@ export default function DashboardSubPage() {
     }
   };
 
-  return <div className="min-h-[60vh]">{renderContent()}</div>;
+  return (
+    <div className="w-full min-w-0">
+      {/* Mobile-safe padding + prevents “wide component breaks layout” */}
+      <div className="min-h-[60vh] w-full min-w-0 px-2 sm:px-4 py-3 overflow-x-auto">
+        {renderContent()}
+      </div>
+    </div>
+  );
 }
