@@ -12,41 +12,72 @@ import {
 /* ╭────────────────────────────────────────────────────────────────────────────╮
    │ 0) TYPES                                                                   │
    ╰────────────────────────────────────────────────────────────────────────────╯ */
-type Category =
-  | 'Moderation'
-  | 'Analytics'
-  | 'Ecommerce'
-  | 'Fun'
-  | 'Engagement'
-  | 'Music'
-  | 'Automation'
-  | 'Overlays'
-  | 'Accessibility'
-  | 'Developer'
-  | 'Audio';
+const STORE_CATEGORIES = [
+  'Moderation',
+  'Safety',
+  'Automation',
+  'Analytics',
+  'Engagement',
+  'Community',
+  'Overlays',
+  'Audio',
+  'Music',
+  'Clips',
+  'Scheduling',
+  'Monetization',
+  'Ecommerce',
+  'Branding',
+  'Accessibility',
+  'Integrations',
+  'Developer',
+  'Rewards',
+] as const;
 
+type Category = (typeof STORE_CATEGORIES)[number];
+
+type Price =
+  | { type: 'free' }
+  | { type: 'included' } // preinstalled/bundled with WeGoLive
+  | { type: 'sub'; monthlyUsd: number } // monthly subscription per app
+  | { type: 'one-time'; amountUsd: number };
 
 type Extension = {
   id: string;
   name: string;
   author: string;
-  icon?: string; // optional image url
+  icon?: string;
   categories: Category[];
   short: string;
   description: string;
-  rating: number; // 0..5
-  installs: number; // total installs
-  price?: 'free' | 'pro' | 'one-time';
+  rating: number;
+  installs: number;
+  price: Price;
   version: string;
   lastUpdated: string; // ISO
-  permissions: Array<{ id: string; label: string; risk: 'low'|'med'|'high' }>;
+  permissions: Array<{ id: string; label: string; risk: 'low' | 'med' | 'high' }>;
   website?: string;
   repo?: string;
   verified?: boolean;
   featured?: boolean;
   recommended?: boolean;
-  compatibility: Array<'Studio'|'OBS'|'Mobile'|'Web'>;
+  preinstalled?: boolean; // ✅ new
+  compatibility: Array<'Studio' | 'OBS' | 'Mobile' | 'Web'>;
 };
+
+function formatPrice(p: Price) {
+  if (p.type === 'free') return 'Free';
+  if (p.type === 'included') return 'Included';
+  if (p.type === 'one-time') return `$${p.amountUsd.toFixed(2)} one-time`;
+  return `$${p.monthlyUsd.toFixed(2)}/mo`;
+}
+
+function priceTone(p: Price): 'zinc' | 'emerald' | 'amber' | 'sky' {
+  if (p.type === 'free') return 'emerald';
+  if (p.type === 'included') return 'sky';
+  if (p.type === 'one-time') return 'amber';
+  return 'zinc';
+}
+
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
    │ 1) PERSISTENCE HOOK                                                        │
@@ -205,20 +236,21 @@ function Tag({ children }: { children: React.ReactNode }) {
 
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
-   │ 3) MOCK CATALOG (replace with API later)                                   │
+   │ 3) APPS CATALOG (replace with API later)                                   │
    ╰────────────────────────────────────────────────────────────────────────────╯ */
 const CATALOG: Extension[] = [
   {
     id: 'guardian',
     name: 'Guardian Mod',
     author: 'WeGoLive',
-    categories: ['Moderation', 'Automation'],
+    categories: ['Moderation', 'Automation', 'Safety'],
     short: 'AI auto-moderation with context + language filters.',
     description:
-      'Guardian Mod uses on-device NLP to detect toxicity, spam, and harassment in real-time. It can soft-mute, time-out, or escalate to a mod prompt. Works offline for low latency.',
+      'Guardian Mod detects toxicity, spam, harassment, and raid patterns in real-time. It can soft-mute, time-out, or escalate to a mod prompt with transparency logs.',
     rating: 4.8,
     installs: 18240,
-    price: 'free',
+    price: { type: 'included' },
+    preinstalled: true,
     version: '1.6.0',
     lastUpdated: '2025-10-01',
     permissions: [
@@ -229,19 +261,20 @@ const CATALOG: Extension[] = [
     verified: true,
     featured: true,
     recommended: true,
-    compatibility: ['Studio','Web'],
+    compatibility: ['Studio', 'Web'],
   },
+
   {
     id: 'heatmap',
     name: 'Viewer Heatmap',
     author: 'SignalLab',
-    categories: ['Analytics', 'Engagement'],
+    categories: ['Analytics', 'Engagement', 'Overlays'],
     short: 'Real-time engagement heatmap overlaid on your stream.',
     description:
-      'Overlay click/attention heatmaps sourced from chat events, reactions, and polls. Discover where your stream retains attention and adapt layouts.',
+      'Overlay engagement heatmaps sourced from chat events, reactions, and polls. Helps you see where attention spikes and drops so you can adjust layouts.',
     rating: 4.6,
     installs: 9341,
-    price: 'pro',
+    price: { type: 'sub', monthlyUsd: 1.79 },
     version: '2.1.3',
     lastUpdated: '2025-11-05',
     permissions: [
@@ -251,19 +284,20 @@ const CATALOG: Extension[] = [
     repo: 'https://github.com/signallab/heatmap',
     verified: true,
     featured: true,
-    compatibility: ['Studio','OBS','Web'],
+    compatibility: ['Studio', 'OBS', 'Web'],
   },
+
   {
     id: 'storefront',
     name: 'Storefront Mini',
     author: 'Kitsune Commerce',
-    categories: ['Ecommerce', 'Engagement'],
+    categories: ['Ecommerce', 'Engagement', 'Monetization'],
     short: 'Shoppable overlay for merch & digital goods.',
     description:
       'In-stream cart, QR checkout, and fulfillment webhook. Drops enable limited-time offers synced to chat commands.',
     rating: 4.4,
     installs: 12877,
-    price: 'one-time',
+    price: { type: 'sub', monthlyUsd: 1.79 },
     version: '3.0.0',
     lastUpdated: '2025-08-22',
     permissions: [
@@ -271,8 +305,9 @@ const CATALOG: Extension[] = [
       { id: 'overlay', label: 'Overlay display', risk: 'low' },
     ],
     website: 'https://kitsune.dev/storefront',
-    compatibility: ['Studio','Web','Mobile'],
+    compatibility: ['Studio', 'Web', 'Mobile'],
   },
+
   {
     id: 'captions-pro',
     name: 'Captions Pro',
@@ -280,10 +315,10 @@ const CATALOG: Extension[] = [
     categories: ['Accessibility', 'Audio'],
     short: 'Low-latency captions with vocab lists & styling.',
     description:
-      'Local+cloud hybrid ASR, word-level timings, profanity mask, and brand vocabulary. Output SRT or burn into overlay.',
+      'Hybrid ASR with word-level timings, profanity masking, and brand vocabulary. Output SRT or burn into overlay.',
     rating: 4.7,
     installs: 15440,
-    price: 'pro',
+    price: { type: 'sub', monthlyUsd: 0.79 },
     version: '1.9.5',
     lastUpdated: '2025-09-30',
     permissions: [
@@ -291,19 +326,20 @@ const CATALOG: Extension[] = [
       { id: 'overlay', label: 'Overlay display', risk: 'low' },
     ],
     repo: 'https://github.com/opensound/captions-pro',
-    compatibility: ['Studio','OBS','Web','Mobile'],
+    compatibility: ['Studio', 'OBS', 'Web', 'Mobile'],
   },
+
   {
     id: 'now-playing',
     name: 'Now Playing',
     author: 'StreamBeats',
-    categories: ['Music', 'Overlays'],
+    categories: ['Music', 'Overlays', 'Integrations'],
     short: 'Display current track from Spotify/Apple/YT Music.',
     description:
       'Auto-switch services, album art cache, and theme-ready text layers for your lower-third.',
     rating: 4.2,
     installs: 22031,
-    price: 'free',
+    price: { type: 'free' },
     version: '2.4.1',
     lastUpdated: '2025-11-10',
     permissions: [
@@ -311,9 +347,238 @@ const CATALOG: Extension[] = [
       { id: 'overlay', label: 'Overlay display', risk: 'low' },
     ],
     website: 'https://streambeats.dev/now-playing',
-    compatibility: ['Studio','OBS','Web'],
+    compatibility: ['Studio', 'OBS', 'Web'],
+  },
+
+  /* ---------------------- SAFETY + MODERATION (FREE / INCLUDED) ---------------------- */
+  {
+    id: 'raid-guard',
+    name: 'Raid Guard',
+    author: 'WeGoLive',
+    categories: ['Safety', 'Moderation', 'Automation'],
+    short: 'Detect raids/brigades and auto-enable protection modes.',
+    description:
+      'Triggers follower-only/chat slowmode, blocks repeated phrases, and prompts mods with a one-click lockdown action.',
+    rating: 4.9,
+    installs: 40211,
+    price: { type: 'included' },
+    preinstalled: true,
+    version: '1.2.0',
+    lastUpdated: '2025-11-20',
+    permissions: [
+      { id: 'chat:read', label: 'Read chat', risk: 'low' },
+      { id: 'chat:moderate', label: 'Lockdown / Timeout', risk: 'high' },
+      { id: 'events', label: 'Stream events', risk: 'med' },
+    ],
+    verified: true,
+    recommended: true,
+    compatibility: ['Studio', 'Web'],
+  },
+  {
+    id: 'link-shield',
+    name: 'Link Shield',
+    author: 'WeGoLive',
+    categories: ['Safety', 'Moderation'],
+    short: 'Blocks scam links + phishing domains with safe allowlists.',
+    description:
+      'Auto-removes suspicious links, supports per-channel allowlist, and flags repeat offenders for moderators.',
+    rating: 4.7,
+    installs: 31880,
+    price: { type: 'free' },
+    version: '1.0.4',
+    lastUpdated: '2025-10-18',
+    permissions: [
+      { id: 'chat:read', label: 'Read chat', risk: 'low' },
+      { id: 'chat:moderate', label: 'Remove message', risk: 'med' },
+    ],
+    verified: true,
+    compatibility: ['Studio', 'Web'],
+  },
+  {
+    id: 'age-gate',
+    name: 'Age Gate & Labels',
+    author: 'WeGoLive',
+    categories: ['Safety', 'Moderation'],
+    short: 'Stream labels + age-gating reminders (liability-friendly).',
+    description:
+      'Adds pre-stream checklist reminders for content labels and optional age-gate prompts with audit-friendly logs.',
+    rating: 4.5,
+    installs: 14120,
+    price: { type: 'free' },
+    version: '1.1.2',
+    lastUpdated: '2025-09-12',
+    permissions: [{ id: 'settings', label: 'Read/write channel labels', risk: 'low' }],
+    compatibility: ['Studio', 'Web'],
+  },
+  {
+    id: 'profanity-mask',
+    name: 'Profanity Mask (Chat)',
+    author: 'CivicTools',
+    categories: ['Moderation', 'Safety', 'Accessibility'],
+    short: 'Auto-masks profanity while preserving context.',
+    description:
+      'Replaces profane phrases with safe masks, supports per-language rules, and keeps original text available to mods only.',
+    rating: 4.3,
+    installs: 9902,
+    price: { type: 'free' },
+    version: '2.0.0',
+    lastUpdated: '2025-08-03',
+    permissions: [
+      { id: 'chat:read', label: 'Read chat', risk: 'low' },
+      { id: 'chat:moderate', label: 'Edit/replace display', risk: 'med' },
+    ],
+    compatibility: ['Studio', 'Web'],
+  },
+
+  /* ---------------------- FREE GROWTH / ENGAGEMENT ---------------------- */
+  {
+    id: 'polls-lite',
+    name: 'Polls Lite',
+    author: 'WeGoLive',
+    categories: ['Engagement', 'Community'],
+    short: 'Simple polls + chat commands (free tier).',
+    description:
+      'Quick polls with chat commands. Great starter engagement. (Pro version adds scheduling + analytics.)',
+    rating: 4.1,
+    installs: 25780,
+    price: { type: 'free' },
+    version: '1.3.1',
+    lastUpdated: '2025-07-19',
+    permissions: [
+      { id: 'chat:read', label: 'Read chat', risk: 'low' },
+      { id: 'chat:write', label: 'Post poll messages', risk: 'med' },
+    ],
+    compatibility: ['Studio', 'Web'],
+  },
+  {
+    id: 'clip-marker',
+    name: 'Clip Marker',
+    author: 'MomentWorks',
+    categories: ['Clips', 'Automation'],
+    short: 'Hotkey markers + quick export list after stream.',
+    description:
+      'Drops timestamp markers during live. After stream, shows a “moments list” to speed up clipping.',
+    rating: 4.4,
+    installs: 12022,
+    price: { type: 'free' },
+    version: '1.0.9',
+    lastUpdated: '2025-10-02',
+    permissions: [{ id: 'events', label: 'Read stream events', risk: 'low' }],
+    compatibility: ['Studio', 'Web'],
+  },
+  {
+    id: 'lower-third-pack-free',
+    name: 'Lower Third Pack (Free)',
+    author: 'OverlayForge',
+    categories: ['Overlays', 'Branding'],
+    short: 'Starter lower-thirds + social callouts.',
+    description:
+      'Clean lower-thirds, “Follow” callouts, and simple scene labels. Mobile-friendly overlays included.',
+    rating: 4.0,
+    installs: 18840,
+    price: { type: 'free' },
+    version: '1.2.6',
+    lastUpdated: '2025-11-02',
+    permissions: [{ id: 'overlay', label: 'Overlay display', risk: 'low' }],
+    compatibility: ['OBS', 'Web', 'Studio'],
+  },
+
+  /* ---------------------- $0.79/mo “MICRO” SUBS ---------------------- */
+  {
+    id: 'polls-plus',
+    name: 'Polls+',
+    author: 'WeGoLive',
+    categories: ['Engagement', 'Community', 'Analytics'],
+    short: 'Scheduled polls + outcomes dashboard.',
+    description:
+      'Adds poll scheduling, multi-step polls, and results analytics (retention + chat velocity).',
+    rating: 4.6,
+    installs: 8420,
+    price: { type: 'sub', monthlyUsd: 0.79 },
+    version: '1.0.0',
+    lastUpdated: '2025-12-01',
+    permissions: [
+      { id: 'chat:read', label: 'Read chat', risk: 'low' },
+      { id: 'chat:write', label: 'Post poll messages', risk: 'med' },
+      { id: 'events', label: 'Stream events', risk: 'med' },
+    ],
+    featured: true,
+    compatibility: ['Studio', 'Web'],
+  },
+  {
+    id: 'clip-finder',
+    name: 'Clip Finder',
+    author: 'MomentWorks',
+    categories: ['Clips', 'Analytics', 'Automation'],
+    short: 'Suggests clip ranges based on spikes.',
+    description:
+      'Detects “spike moments” from chat velocity and reactions. Proposes candidate clip windows after stream.',
+    rating: 4.5,
+    installs: 6100,
+    price: { type: 'sub', monthlyUsd: 0.79 },
+    version: '1.1.0',
+    lastUpdated: '2025-11-28',
+    permissions: [{ id: 'events', label: 'Read stream events', risk: 'med' }],
+    compatibility: ['Studio', 'Web'],
+  },
+  {
+    id: 'scheduler-mini',
+    name: 'Scheduler Mini',
+    author: 'CalendarCrew',
+    categories: ['Scheduling', 'Community'],
+    short: 'Schedule streams + post reminders to chat.',
+    description:
+      'Simple schedule entries, countdown card, and auto-reminders to chat 30/10/1 minutes before.',
+    rating: 4.2,
+    installs: 4500,
+    price: { type: 'sub', monthlyUsd: 0.79 },
+    version: '2.0.2',
+    lastUpdated: '2025-10-15',
+    permissions: [
+      { id: 'chat:write', label: 'Post reminders', risk: 'med' },
+      { id: 'settings', label: 'Read channel settings', risk: 'low' },
+    ],
+    compatibility: ['Studio', 'Web', 'Mobile'],
+  },
+
+  /* ---------------------- $1.79/mo “PRO” SUBS ---------------------- */
+  {
+    id: 'multi-platform-restream',
+    name: 'Multi-Platform Restream',
+    author: 'StreamRelay',
+    categories: ['Integrations', 'Automation'],
+    short: 'Restream to multiple platforms with unified chat (demo UI).',
+    description:
+      'One broadcast, multiple destinations. Adds unified chat view and per-platform toggles. (Wire later.)',
+    rating: 4.3,
+    installs: 3900,
+    price: { type: 'sub', monthlyUsd: 1.79 },
+    version: '0.9.0',
+    lastUpdated: '2025-11-12',
+    permissions: [
+      { id: 'integrations', label: 'Connect external platforms', risk: 'high' },
+      { id: 'chat:read', label: 'Read chat', risk: 'low' },
+    ],
+    compatibility: ['Studio', 'Web'],
+  },
+  {
+    id: 'sponsor-crm',
+    name: 'Sponsor CRM',
+    author: 'BrandDesk',
+    categories: ['Monetization', 'Analytics', 'Community'],
+    short: 'Track sponsors, deliverables, and campaign notes.',
+    description:
+      'Mini CRM: campaign checklist, auto reminders, sponsor notes, and a quick “media kit” export.',
+    rating: 4.6,
+    installs: 2750,
+    price: { type: 'sub', monthlyUsd: 1.79 },
+    version: '1.0.3',
+    lastUpdated: '2025-11-21',
+    permissions: [{ id: 'data', label: 'Store sponsor data', risk: 'med' }],
+    compatibility: ['Web', 'Studio'],
   },
 ];
+
 
 /* ╭────────────────────────────────────────────────────────────────────────────╮
    │ 4) Store CARD + DETAIL MODAL                                           │
@@ -890,9 +1155,7 @@ export default function ExtensionsPage() {
                       <div className="text-xs text-zinc-400 line-clamp-2">{c.short}</div>
                       <div className="mt-1 flex flex-wrap items-center gap-2">
                         <RatingStars value={c.rating} />
-                        <Chip color="zinc">
-                          {c.price === 'free' ? 'Free' : c.price === 'pro' ? 'Pro' : 'One-time'}
-                        </Chip>
+                        <Chip color="zinc">{formatPrice(c.price)}</Chip>
                       </div>
                     </div>
                   </div>
