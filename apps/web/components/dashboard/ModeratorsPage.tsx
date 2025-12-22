@@ -1,198 +1,102 @@
 // apps/web/components/dashboard/ModeratorsPage.tsx
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  FiShield,
-  FiUserPlus,
-  FiSearch,
-  FiMoreVertical,
-  FiTrash2,
-  FiEdit3,
-  FiCheck,
-  FiX,
-  FiClock,
   FiAlertTriangle,
+  FiAward,
+  FiBell,
+  FiCheck,
+  FiChevronRight,
+  FiClock,
+  FiFilter,
   FiLock,
-  FiUnlock,
-  FiDownload,
-  FiUpload,
-  FiInfo,
+  FiPlus,
+  FiRefreshCw,
+  FiSearch,
+  FiShield,
+  FiSlash,
+  FiTag,
   FiUsers,
+  FiX,
+  FiZap,
 } from 'react-icons/fi';
 
 /* ──────────────────────────────────────────────────────────────────────────────
-  Moderators Page (Mock UI)
-  - Mobile-safe: min-w-0, overflow-x-hidden, responsive grid, sticky filters
-  - Organized: small primitives + clear sections
-  - “Better than others”: permission templates, trust score, audit trail, bulk actions
+   Types
 ────────────────────────────────────────────────────────────────────────────── */
+type ModStatus = 'active' | 'paused' | 'suspended';
+type TrustLevel = 'new' | 'trusted' | 'senior';
 
-type Role = 'Owner' | 'Admin' | 'Moderator' | 'Helper' | 'Bot';
-
-type ModStatus = 'active' | 'invited' | 'suspended';
-
-type Risk = 'low' | 'med' | 'high';
-
-type PermissionKey =
+type Permission =
   | 'chat:read'
   | 'chat:timeout'
   | 'chat:ban'
-  | 'chat:delete'
+  | 'chat:purge'
   | 'chat:slowmode'
   | 'chat:links'
-  | 'mods:manage'
-  | 'settings:moderation'
-  | 'vod:moderate'
-  | 'reports:review';
+  | 'chat:keywords'
+  | 'appeals:review'
+  | 'safety:raidmode';
 
-type Permission = {
-  key: PermissionKey;
-  label: string;
-  risk: Risk;
+type RoleTemplate = {
+  id: string;
+  name: string;
+  tone: Tone;
+  permissions: Permission[];
+  description: string;
 };
 
-type Moderator = {
+type Mod = {
   id: string;
   name: string;
   handle: string;
-  role: Role;
+  roleId: string;
   status: ModStatus;
-  verified: boolean;
-  trustScore: number; // 0-100
+  trust: TrustLevel;
+  addedAt: number; // epoch ms
   lastActiveAt: number; // epoch ms
-  joinedAt: number;
-  notes?: string;
-  permissions: PermissionKey[];
+  stats: {
+    actionsTotal: number; // all actions (timeouts, bans, purges, etc.)
+    reversals: number; // actions undone by admin / other mod
+    appealsReviewed: number;
+    appealsOverturned: number; // mod decision overturned or action deemed wrong
+    notesWritten: number;
+  };
 };
 
-type AuditEvent = {
+type AppealStatus = 'open' | 'approved' | 'denied';
+
+type Appeal = {
   id: string;
-  at: number;
-  actor: string;
-  action: string;
-  target?: string;
-  severity: 'info' | 'warn' | 'danger';
+  user: { name: string; handle: string };
+  action: { type: 'timeout' | 'ban' | 'purge'; duration?: string };
+  byModId: string;
+  createdAt: number;
+  reason: string;
+  status: AppealStatus;
+  internalNote?: string;
 };
 
-const ALL_PERMS: Permission[] = [
-  { key: 'chat:read', label: 'Read chat', risk: 'low' },
-  { key: 'chat:delete', label: 'Delete messages', risk: 'med' },
-  { key: 'chat:timeout', label: 'Timeout users', risk: 'med' },
-  { key: 'chat:ban', label: 'Ban users', risk: 'high' },
-  { key: 'chat:slowmode', label: 'Toggle slow mode', risk: 'med' },
-  { key: 'chat:links', label: 'Link controls', risk: 'med' },
-  { key: 'reports:review', label: 'Review reports', risk: 'med' },
-  { key: 'vod:moderate', label: 'Moderate VOD/comments', risk: 'med' },
-  { key: 'settings:moderation', label: 'Edit moderation settings', risk: 'high' },
-  { key: 'mods:manage', label: 'Manage moderators', risk: 'high' },
-];
+type RaidPresetId = 'shield' | 'lockdown' | 'followers-only';
 
-const PERM_TEMPLATES: { id: string; name: string; description: string; perms: PermissionKey[] }[] = [
-  {
-    id: 'helper',
-    name: 'Helper',
-    description: 'Basic cleanup without heavy powers.',
-    perms: ['chat:read', 'chat:delete', 'reports:review'],
-  },
-  {
-    id: 'mod',
-    name: 'Moderator',
-    description: 'Standard real-time moderation toolkit.',
-    perms: ['chat:read', 'chat:delete', 'chat:timeout', 'chat:slowmode', 'chat:links', 'reports:review', 'vod:moderate'],
-  },
-  {
-    id: 'admin',
-    name: 'Admin',
-    description: 'Trusted staff; includes high-risk actions.',
-    perms: ['chat:read', 'chat:delete', 'chat:timeout', 'chat:ban', 'chat:slowmode', 'chat:links', 'reports:review', 'vod:moderate', 'settings:moderation', 'mods:manage'],
-  },
-];
-
-const SEED_MODS: Moderator[] = [
-  {
-    id: 'm1',
-    name: 'Avery',
-    handle: '@avery_mod',
-    role: 'Admin',
-    status: 'active',
-    verified: true,
-    trustScore: 92,
-    lastActiveAt: Date.now() - 1000 * 60 * 12,
-    joinedAt: Date.now() - 1000 * 60 * 60 * 24 * 210,
-    notes: 'Covers late-night streams, great judgement.',
-    permissions: PERM_TEMPLATES.find((t) => t.id === 'admin')!.perms,
-  },
-  {
-    id: 'm2',
-    name: 'Jordan',
-    handle: '@jordan',
-    role: 'Moderator',
-    status: 'active',
-    verified: false,
-    trustScore: 78,
-    lastActiveAt: Date.now() - 1000 * 60 * 60 * 2,
-    joinedAt: Date.now() - 1000 * 60 * 60 * 24 * 64,
-    notes: 'Fast on spam, needs ban escalation approval.',
-    permissions: PERM_TEMPLATES.find((t) => t.id === 'mod')!.perms.filter((p) => p !== 'chat:ban'),
-  },
-  {
-    id: 'm3',
-    name: 'Kai',
-    handle: '@kai_helper',
-    role: 'Helper',
-    status: 'invited',
-    verified: false,
-    trustScore: 60,
-    lastActiveAt: Date.now() - 1000 * 60 * 60 * 24 * 5,
-    joinedAt: Date.now() - 1000 * 60 * 60 * 24 * 5,
-    notes: 'Pending acceptance.',
-    permissions: PERM_TEMPLATES.find((t) => t.id === 'helper')!.perms,
-  },
-  {
-    id: 'm4',
-    name: 'AutoMod Bot',
-    handle: '@wegolive_guardian',
-    role: 'Bot',
-    status: 'active',
-    verified: true,
-    trustScore: 88,
-    lastActiveAt: Date.now() - 1000 * 60 * 3,
-    joinedAt: Date.now() - 1000 * 60 * 60 * 24 * 14,
-    notes: 'Auto-detects spam and hate speech (soft actions only).',
-    permissions: ['chat:read', 'chat:delete', 'reports:review'],
-  },
-];
-
-const SEED_AUDIT: AuditEvent[] = [
-  { id: 'a1', at: Date.now() - 1000 * 60 * 18, actor: 'You', action: 'Updated permissions', target: '@jordan', severity: 'info' },
-  { id: 'a2', at: Date.now() - 1000 * 60 * 60 * 3, actor: '@avery_mod', action: 'Timed out user', target: '@toxic_spam_91', severity: 'warn' },
-  { id: 'a3', at: Date.now() - 1000 * 60 * 60 * 26, actor: 'AutoMod Bot', action: 'Deleted spam links', target: '7 messages', severity: 'warn' },
-  { id: 'a4', at: Date.now() - 1000 * 60 * 60 * 72, actor: 'You', action: 'Invited moderator', target: '@kai_helper', severity: 'info' },
-];
-
-function cx(...parts: Array<string | false | null | undefined>) {
-  return parts.filter(Boolean).join(' ');
-}
-
-function fmtRelative(ms: number) {
-  const diff = Date.now() - ms;
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'Just now';
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  return `${d}d ago`;
-}
-
-function fmtDate(ms: number) {
-  return new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
-}
+type RaidConfig = {
+  enabled: boolean;
+  presetId?: RaidPresetId;
+  slowModeSeconds: number;
+  followersOnly: boolean;
+  minAccountAgeDays: number;
+  linkFiltering: 'off' | 'strict' | 'trusted-only';
+  capsFilter: boolean;
+  keywordLock: boolean;
+  autoTimeoutNewAccounts: boolean;
+  autoTimeoutSeconds: number;
+};
 
 /* ──────────────────────────────────────────────────────────────────────────────
-  Tiny UI Primitives
+   UI Primitives
 ────────────────────────────────────────────────────────────────────────────── */
+type Tone = 'zinc' | 'emerald' | 'amber' | 'rose' | 'sky';
 
 function Card({
   title,
@@ -200,38 +104,44 @@ function Card({
   right,
   children,
   className = '',
-  bodyClass = '',
+  bodyClassName = '',
 }: {
   title: string;
   icon?: React.ReactNode;
   right?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
-  bodyClass?: string;
+  bodyClassName?: string;
 }) {
   return (
-    <section className={cx('rounded-xl border border-zinc-800 bg-zinc-950/50', className)}>
-      <header className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-zinc-200">
-          {icon}
-          <span>{title}</span>
+    <section className={`w-full min-w-0 rounded-xl border border-zinc-800 bg-zinc-900 ${className}`}>
+      <header className="flex items-start justify-between gap-3 border-b border-zinc-800 px-4 py-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-zinc-200">
+            {icon}
+            <h2 className="truncate text-sm font-semibold">{title}</h2>
+          </div>
         </div>
         {right}
       </header>
-      <div className={cx('p-4', bodyClass)}>{children}</div>
+      <div className={`w-full min-w-0 px-4 py-4 ${bodyClassName}`}>{children}</div>
     </section>
   );
 }
 
-function Chip({ tone = 'zinc', children }: { tone?: 'zinc' | 'emerald' | 'rose' | 'amber' | 'sky'; children: React.ReactNode }) {
-  const map: Record<string, string> = {
-    zinc: 'bg-zinc-800/70 text-zinc-200 ring-zinc-700',
-    emerald: 'bg-emerald-600/20 text-emerald-300 ring-emerald-600/30',
-    rose: 'bg-rose-600/20 text-rose-300 ring-rose-600/30',
-    amber: 'bg-amber-600/20 text-amber-300 ring-amber-600/30',
-    sky: 'bg-sky-600/20 text-sky-300 ring-sky-600/30',
+function Chip({ children, tone = 'zinc' }: { children: React.ReactNode; tone?: Tone }) {
+  const tones: Record<Tone, string> = {
+    zinc: 'bg-zinc-800 text-zinc-200 ring-zinc-700',
+    emerald: 'bg-emerald-600/15 text-emerald-300 ring-emerald-600/30',
+    amber: 'bg-amber-600/15 text-amber-300 ring-amber-600/30',
+    rose: 'bg-rose-600/15 text-rose-300 ring-rose-600/30',
+    sky: 'bg-sky-600/15 text-sky-300 ring-sky-600/30',
   };
-  return <span className={cx('inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1', map[tone])}>{children}</span>;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ring-1 ${tones[tone]}`}>
+      {children}
+    </span>
+  );
 }
 
 function Button({
@@ -245,965 +155,1291 @@ function Button({
 }: {
   children: React.ReactNode;
   onClick?: () => void;
-  tone?: 'zinc' | 'emerald' | 'rose';
+  tone?: Tone;
   icon?: React.ReactNode;
   disabled?: boolean;
   className?: string;
   type?: 'button' | 'submit';
 }) {
-  const map: Record<string, string> = {
-    zinc: 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-100',
-    emerald: 'bg-emerald-600 hover:bg-emerald-500 border-emerald-600 text-white',
-    rose: 'bg-rose-600 hover:bg-rose-500 border-rose-600 text-white',
+  const tones: Record<Tone, string> = {
+    zinc: 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border-zinc-700',
+    emerald: 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-600',
+    amber: 'bg-amber-600 hover:bg-amber-500 text-white border-amber-600',
+    rose: 'bg-rose-600 hover:bg-rose-500 text-white border-rose-600',
+    sky: 'bg-sky-600 hover:bg-sky-500 text-white border-sky-600',
   };
   return (
     <button
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={cx(
-        'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm transition disabled:opacity-60',
-        map[tone],
-        className
-      )}
+      className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${tones[tone]} ${className}`}
     >
       {icon}
-      {children}
+      <span className="truncate">{children}</span>
     </button>
   );
 }
 
-function TextInput({
+function Input({
   value,
   onChange,
   placeholder,
-  left,
   right,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
-  left?: React.ReactNode;
   right?: React.ReactNode;
 }) {
   return (
-    <div className="relative min-w-0">
-      {left && <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400">{left}</div>}
+    <div className="relative w-full min-w-0">
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={cx(
-          'w-full min-w-0 rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-emerald-600',
-          left ? 'pl-10' : '',
-          right ? 'pr-10' : ''
-        )}
+        className="w-full min-w-0 rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 pr-10 text-sm text-zinc-200 outline-none placeholder:text-zinc-500 focus:border-emerald-600"
       />
-      {right && <div className="absolute inset-y-0 right-2 flex items-center">{right}</div>}
+      {right ? <div className="absolute inset-y-0 right-2 flex items-center text-zinc-400">{right}</div> : null}
     </div>
   );
 }
 
-function DividerLabel({ children }: { children: React.ReactNode }) {
+function Toggle({
+  on,
+  onToggle,
+  label,
+  description,
+}: {
+  on: boolean;
+  onToggle: () => void;
+  label: string;
+  description?: string;
+}) {
   return (
-    <div className="flex items-center gap-3 py-2">
-      <div className="h-px flex-1 bg-zinc-800" />
-      <div className="text-xs text-zinc-400">{children}</div>
-      <div className="h-px flex-1 bg-zinc-800" />
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full min-w-0 items-start justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-3 text-left hover:border-zinc-700"
+    >
+      <div className="min-w-0">
+        <div className="truncate text-sm font-medium text-zinc-200">{label}</div>
+        {description ? <div className="mt-1 text-xs text-zinc-500">{description}</div> : null}
+      </div>
+      <span
+        className={`mt-0.5 inline-flex h-6 w-11 flex-none items-center rounded-full border transition ${
+          on ? 'bg-emerald-600/30 border-emerald-600/40' : 'bg-zinc-800 border-zinc-700'
+        }`}
+      >
+        <span
+          className={`ml-1 h-4 w-4 rounded-full transition ${
+            on ? 'translate-x-5 bg-emerald-400' : 'translate-x-0 bg-zinc-400'
+          }`}
+        />
+      </span>
+    </button>
+  );
+}
+
+function Progress({ value }: { value: number }) {
+  const v = Math.max(0, Math.min(100, Math.round(value)));
+  const tone =
+    v >= 85 ? 'bg-emerald-500' : v >= 70 ? 'bg-sky-500' : v >= 55 ? 'bg-amber-500' : 'bg-rose-500';
+  return (
+    <div className="h-2 w-full rounded-full bg-zinc-800">
+      <div className={`h-2 rounded-full ${tone}`} style={{ width: `${v}%` }} />
     </div>
   );
+}
+
+function fmtRelative(ts: number) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+}
+
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
 }
 
 /* ──────────────────────────────────────────────────────────────────────────────
-  Page
+   Mock Data (swap to Supabase/API later)
 ────────────────────────────────────────────────────────────────────────────── */
+const ROLE_TEMPLATES: RoleTemplate[] = [
+  {
+    id: 'chat-mod',
+    name: 'Chat Mod',
+    tone: 'sky',
+    description: 'Everyday chat tools: timeouts, basic cleanup, link filters.',
+    permissions: ['chat:read', 'chat:timeout', 'chat:links'],
+  },
+  {
+    id: 'safety-mod',
+    name: 'Safety Mod',
+    tone: 'amber',
+    description: 'High-signal safety tools + raid response + keyword locks.',
+    permissions: ['chat:read', 'chat:timeout', 'chat:ban', 'chat:slowmode', 'chat:keywords', 'safety:raidmode'],
+  },
+  {
+    id: 'events-mod',
+    name: 'Events Mod',
+    tone: 'emerald',
+    description: 'Engagement-heavy sessions: chat flow + slowmode + highlights.',
+    permissions: ['chat:read', 'chat:timeout', 'chat:slowmode', 'chat:links'],
+  },
+  {
+    id: 'senior-mod',
+    name: 'Senior Mod',
+    tone: 'rose',
+    description: 'Full control + appeals review + escalation authority.',
+    permissions: [
+      'chat:read',
+      'chat:timeout',
+      'chat:ban',
+      'chat:purge',
+      'chat:slowmode',
+      'chat:links',
+      'chat:keywords',
+      'appeals:review',
+      'safety:raidmode',
+    ],
+  },
+];
+
+const SEED_MODS: Mod[] = [
+  {
+    id: 'm1',
+    name: 'Alyx Nguyen',
+    handle: '@alyx',
+    roleId: 'senior-mod',
+    status: 'active',
+    trust: 'senior',
+    addedAt: Date.now() - 1000 * 60 * 60 * 24 * 210,
+    lastActiveAt: Date.now() - 1000 * 60 * 16,
+    stats: { actionsTotal: 4821, reversals: 22, appealsReviewed: 188, appealsOverturned: 9, notesWritten: 96 },
+  },
+  {
+    id: 'm2',
+    name: 'Jordan Price',
+    handle: '@jprice',
+    roleId: 'safety-mod',
+    status: 'active',
+    trust: 'trusted',
+    addedAt: Date.now() - 1000 * 60 * 60 * 24 * 90,
+    lastActiveAt: Date.now() - 1000 * 60 * 60 * 3,
+    stats: { actionsTotal: 2110, reversals: 14, appealsReviewed: 44, appealsOverturned: 6, notesWritten: 31 },
+  },
+  {
+    id: 'm3',
+    name: 'Mina Carter',
+    handle: '@mina',
+    roleId: 'events-mod',
+    status: 'paused',
+    trust: 'trusted',
+    addedAt: Date.now() - 1000 * 60 * 60 * 24 * 45,
+    lastActiveAt: Date.now() - 1000 * 60 * 60 * 40,
+    stats: { actionsTotal: 980, reversals: 7, appealsReviewed: 12, appealsOverturned: 3, notesWritten: 12 },
+  },
+  {
+    id: 'm4',
+    name: 'Sam Rivera',
+    handle: '@samr',
+    roleId: 'chat-mod',
+    status: 'active',
+    trust: 'new',
+    addedAt: Date.now() - 1000 * 60 * 60 * 24 * 10,
+    lastActiveAt: Date.now() - 1000 * 60 * 5,
+    stats: { actionsTotal: 210, reversals: 2, appealsReviewed: 0, appealsOverturned: 0, notesWritten: 4 },
+  },
+  {
+    id: 'm5',
+    name: 'Casey Lin',
+    handle: '@casey',
+    roleId: 'chat-mod',
+    status: 'suspended',
+    trust: 'new',
+    addedAt: Date.now() - 1000 * 60 * 60 * 24 * 18,
+    lastActiveAt: Date.now() - 1000 * 60 * 60 * 72,
+    stats: { actionsTotal: 134, reversals: 9, appealsReviewed: 0, appealsOverturned: 0, notesWritten: 1 },
+  },
+];
+
+const SEED_APPEALS: Appeal[] = [
+  {
+    id: 'ap1',
+    user: { name: 'Nova', handle: '@nova' },
+    action: { type: 'timeout', duration: '10m' },
+    byModId: 'm2',
+    createdAt: Date.now() - 1000 * 60 * 18,
+    reason: 'I was quoting chat, not spamming. Please review context.',
+    status: 'open',
+  },
+  {
+    id: 'ap2',
+    user: { name: 'Kyo', handle: '@kyo' },
+    action: { type: 'ban' },
+    byModId: 'm1',
+    createdAt: Date.now() - 1000 * 60 * 60 * 2,
+    reason: 'Ban feels unfair — I linked a meme, not malware.',
+    status: 'open',
+  },
+  {
+    id: 'ap3',
+    user: { name: 'Lia', handle: '@lia' },
+    action: { type: 'purge' },
+    byModId: 'm3',
+    createdAt: Date.now() - 1000 * 60 * 60 * 26,
+    reason: 'My message got deleted but it wasn’t hate. Can you restore?',
+    status: 'approved',
+    internalNote: 'Restored, user warned; false positive keyword match.',
+  },
+];
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   Reputation Scoring (simple + explainable)
+   - Starts at 85
+   - Penalize reversal rate & appeal overturns
+   - Reward tenure & volume (capped)
+────────────────────────────────────────────────────────────────────────────── */
+function computeReputation(mod: Mod) {
+  const base = 85;
+
+  const actions = Math.max(1, mod.stats.actionsTotal);
+  const reversalRate = mod.stats.reversals / actions; // 0..1
+  const appealVolume = Math.max(1, mod.stats.appealsReviewed);
+  const overturnRate = mod.stats.appealsOverturned / appealVolume;
+
+  const daysTenure = Math.max(0, Math.floor((Date.now() - mod.addedAt) / (1000 * 60 * 60 * 24)));
+
+  const tenureBonus = clamp(daysTenure / 30, 0, 10); // up to +10
+  const volumeBonus = clamp(Math.log10(actions + 1) * 6, 0, 10); // up to +10
+
+  const reversalPenalty = clamp(reversalRate * 60, 0, 30); // up to -30
+  const overturnPenalty = clamp(overturnRate * 45, 0, 25); // up to -25
+
+  const statusPenalty = mod.status === 'suspended' ? 20 : mod.status === 'paused' ? 6 : 0;
+
+  const trustBonus = mod.trust === 'senior' ? 4 : mod.trust === 'trusted' ? 2 : 0;
+
+  const score = base + tenureBonus + volumeBonus + trustBonus - reversalPenalty - overturnPenalty - statusPenalty;
+  return clamp(Math.round(score), 0, 100);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   Page
+────────────────────────────────────────────────────────────────────────────── */
+type TabKey = 'mods' | 'appeals' | 'raid';
 
 export default function ModeratorsPage() {
-  const [mods, setMods] = useState<Moderator[]>(SEED_MODS);
-  const [audit, setAudit] = useState<AuditEvent[]>(SEED_AUDIT);
+  const [tab, setTab] = useState<TabKey>('mods');
 
-  // filters
-  const [q, setQ] = useState('');
-  const [role, setRole] = useState<Role | 'All'>('All');
-  const [status, setStatus] = useState<ModStatus | 'all'>('all');
-  const [sort, setSort] = useState<'trust' | 'recent' | 'alpha'>('trust');
+  const [mods, setMods] = useState<Mod[]>(SEED_MODS);
+  const [appeals, setAppeals] = useState<Appeal[]>(SEED_APPEALS);
 
-  // selection
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const selectedIds = useMemo(() => Object.keys(selected).filter((id) => selected[id]), [selected]);
+  // Filters
+  const [query, setQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<ModStatus | 'all'>('all');
+  const [sortKey, setSortKey] = useState<'reputation' | 'actions' | 'recent'>('reputation');
 
-  // drawers/modals (simple inline panels)
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [editing, setEditing] = useState<Moderator | null>(null);
+  // Drawer
+  const [selectedModId, setSelectedModId] = useState<string | null>(null);
 
-  // invite form
-  const [inviteHandle, setInviteHandle] = useState('');
-  const [inviteTemplate, setInviteTemplate] = useState(PERM_TEMPLATES[1].id);
+  // Raid Mode
+  const [raidConfig, setRaidConfig] = useState<RaidConfig>({
+    enabled: false,
+    presetId: undefined,
+    slowModeSeconds: 10,
+    followersOnly: false,
+    minAccountAgeDays: 0,
+    linkFiltering: 'off',
+    capsFilter: false,
+    keywordLock: false,
+    autoTimeoutNewAccounts: false,
+    autoTimeoutSeconds: 30,
+  });
 
-  const stats = useMemo(() => {
-    const active = mods.filter((m) => m.status === 'active').length;
-    const invited = mods.filter((m) => m.status === 'invited').length;
-    const suspended = mods.filter((m) => m.status === 'suspended').length;
-    const avgTrust = mods.length ? Math.round(mods.reduce((a, b) => a + b.trustScore, 0) / mods.length) : 0;
-    return { active, invited, suspended, avgTrust };
+  // Close drawer on Esc
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedModId(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const roleById = useMemo(() => {
+    const map = new Map<string, RoleTemplate>();
+    ROLE_TEMPLATES.forEach((r) => map.set(r.id, r));
+    return map;
+  }, []);
+
+  const modsWithReputation = useMemo(() => {
+    return mods.map((m) => ({ ...m, reputation: computeReputation(m) }));
   }, [mods]);
 
-  const filtered = useMemo(() => {
-    let list = mods.slice();
+  const filteredMods = useMemo(() => {
+    const q = query.trim().toLowerCase();
 
-    if (q.trim()) {
-      const qq = q.toLowerCase();
-      list = list.filter((m) => `${m.name} ${m.handle}`.toLowerCase().includes(qq));
+    let out = modsWithReputation.filter((m) => {
+      const role = roleById.get(m.roleId);
+      const matchesQuery =
+        !q ||
+        m.name.toLowerCase().includes(q) ||
+        m.handle.toLowerCase().includes(q) ||
+        role?.name.toLowerCase().includes(q);
+
+      const matchesRole = roleFilter === 'all' ? true : m.roleId === roleFilter;
+      const matchesStatus = statusFilter === 'all' ? true : m.status === statusFilter;
+
+      return matchesQuery && matchesRole && matchesStatus;
+    });
+
+    if (sortKey === 'reputation') out.sort((a, b) => b.reputation - a.reputation);
+    if (sortKey === 'actions') out.sort((a, b) => b.stats.actionsTotal - a.stats.actionsTotal);
+    if (sortKey === 'recent') out.sort((a, b) => b.lastActiveAt - a.lastActiveAt);
+
+    return out;
+  }, [modsWithReputation, query, roleFilter, statusFilter, sortKey, roleById]);
+
+  const selectedMod = useMemo(() => {
+    if (!selectedModId) return null;
+    return modsWithReputation.find((m) => m.id === selectedModId) ?? null;
+  }, [selectedModId, modsWithReputation]);
+
+  const openAppeals = useMemo(() => appeals.filter((a) => a.status === 'open'), [appeals]);
+  const appealsApproved = useMemo(() => appeals.filter((a) => a.status === 'approved'), [appeals]);
+  const appealsDenied = useMemo(() => appeals.filter((a) => a.status === 'denied'), [appeals]);
+
+  // Actions (demo)
+  const toggleModStatus = (id: string, next: ModStatus) => {
+    setMods((prev) => prev.map((m) => (m.id === id ? { ...m, status: next } : m)));
+  };
+
+  const applyRaidPreset = (presetId: RaidPresetId) => {
+    if (presetId === 'shield') {
+      setRaidConfig((c) => ({
+        ...c,
+        enabled: true,
+        presetId,
+        slowModeSeconds: 15,
+        followersOnly: false,
+        minAccountAgeDays: 7,
+        linkFiltering: 'trusted-only',
+        capsFilter: true,
+        keywordLock: false,
+        autoTimeoutNewAccounts: true,
+        autoTimeoutSeconds: 30,
+      }));
     }
-    if (role !== 'All') list = list.filter((m) => m.role === role);
-    if (status !== 'all') list = list.filter((m) => m.status === status);
-
-    if (sort === 'trust') list.sort((a, b) => b.trustScore - a.trustScore);
-    if (sort === 'recent') list.sort((a, b) => b.lastActiveAt - a.lastActiveAt);
-    if (sort === 'alpha') list.sort((a, b) => a.name.localeCompare(b.name));
-
-    return list;
-  }, [mods, q, role, status, sort]);
-
-  const clearSelection = () => setSelected({});
-  const toggleSelectAll = () => {
-    const allVisibleSelected = filtered.every((m) => selected[m.id]);
-    if (allVisibleSelected) {
-      // unselect visible
-      const next = { ...selected };
-      filtered.forEach((m) => delete next[m.id]);
-      setSelected(next);
-    } else {
-      // select visible
-      const next = { ...selected };
-      filtered.forEach((m) => (next[m.id] = true));
-      setSelected(next);
+    if (presetId === 'followers-only') {
+      setRaidConfig((c) => ({
+        ...c,
+        enabled: true,
+        presetId,
+        slowModeSeconds: 10,
+        followersOnly: true,
+        minAccountAgeDays: 3,
+        linkFiltering: 'strict',
+        capsFilter: true,
+        keywordLock: false,
+        autoTimeoutNewAccounts: true,
+        autoTimeoutSeconds: 45,
+      }));
+    }
+    if (presetId === 'lockdown') {
+      setRaidConfig((c) => ({
+        ...c,
+        enabled: true,
+        presetId,
+        slowModeSeconds: 30,
+        followersOnly: true,
+        minAccountAgeDays: 14,
+        linkFiltering: 'strict',
+        capsFilter: true,
+        keywordLock: true,
+        autoTimeoutNewAccounts: true,
+        autoTimeoutSeconds: 60,
+      }));
     }
   };
 
-  const addAudit = (evt: Omit<AuditEvent, 'id'>) => {
-    setAudit((prev) => [{ id: `evt_${Math.random().toString(36).slice(2, 9)}`, ...evt }, ...prev].slice(0, 50));
-  };
-
-  const bulkSuspend = () => {
-    if (!selectedIds.length) return;
-    setMods((prev) =>
-      prev.map((m) => (selectedIds.includes(m.id) ? { ...m, status: 'suspended' } : m))
+  const resolveAppeal = (id: string, status: AppealStatus, internalNote?: string) => {
+    setAppeals((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, status, internalNote: internalNote ?? a.internalNote } : a))
     );
-    addAudit({ at: Date.now(), actor: 'You', action: 'Suspended moderators', target: `${selectedIds.length} accounts`, severity: 'danger' });
-    clearSelection();
-  };
-
-  const bulkReinstate = () => {
-    if (!selectedIds.length) return;
-    setMods((prev) => prev.map((m) => (selectedIds.includes(m.id) ? { ...m, status: 'active' } : m)));
-    addAudit({ at: Date.now(), actor: 'You', action: 'Reinstated moderators', target: `${selectedIds.length} accounts`, severity: 'info' });
-    clearSelection();
-  };
-
-  const bulkRemove = () => {
-    if (!selectedIds.length) return;
-    setMods((prev) => prev.filter((m) => !selectedIds.includes(m.id)));
-    addAudit({ at: Date.now(), actor: 'You', action: 'Removed moderators', target: `${selectedIds.length} accounts`, severity: 'danger' });
-    clearSelection();
-  };
-
-  const invite = () => {
-    const handle = inviteHandle.trim();
-    if (!handle) return;
-
-    const tmpl = PERM_TEMPLATES.find((t) => t.id === inviteTemplate) ?? PERM_TEMPLATES[1];
-
-    const next: Moderator = {
-      id: `m_${Math.random().toString(36).slice(2, 9)}`,
-      name: handle.replace(/^@/, '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-      handle: handle.startsWith('@') ? handle : `@${handle}`,
-      role: tmpl.id === 'admin' ? 'Admin' : tmpl.id === 'helper' ? 'Helper' : 'Moderator',
-      status: 'invited',
-      verified: false,
-      trustScore: 50,
-      lastActiveAt: Date.now() - 1000 * 60 * 60 * 24,
-      joinedAt: Date.now(),
-      permissions: tmpl.perms,
-      notes: 'Invited — pending acceptance.',
-    };
-
-    setMods((prev) => [next, ...prev]);
-    addAudit({ at: Date.now(), actor: 'You', action: 'Invited moderator', target: next.handle, severity: 'info' });
-
-    setInviteHandle('');
-    setInviteOpen(false);
-  };
-
-  const openEdit = (m: Moderator) => setEditing(m);
-
-  const saveEdit = (m: Moderator) => {
-    setMods((prev) => prev.map((x) => (x.id === m.id ? m : x)));
-    addAudit({ at: Date.now(), actor: 'You', action: 'Updated moderator', target: m.handle, severity: 'info' });
-    setEditing(null);
-  };
-
-  const removeOne = (id: string) => {
-    const target = mods.find((m) => m.id === id)?.handle ?? 'unknown';
-    setMods((prev) => prev.filter((m) => m.id !== id));
-    addAudit({ at: Date.now(), actor: 'You', action: 'Removed moderator', target, severity: 'danger' });
-    setEditing(null);
   };
 
   return (
-    <div className="w-full min-w-0 overflow-x-hidden">
-      <div className="mx-auto w-full min-w-0 max-w-6xl px-2 py-3 sm:px-4 sm:py-4">
-        {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <FiShield className="text-emerald-400" />
-              <h1 className="truncate text-xl font-bold text-zinc-100">Moderators</h1>
-              <Chip tone="emerald">Safety-first</Chip>
-            </div>
-            <p className="mt-1 text-sm text-zinc-400">
-              Manage roles, permissions, and audit trails. Built to reduce liability with clear controls + logs.
-            </p>
-          </div>
-
+    <div className="w-full min-w-0 space-y-4">
+      {/* Top header */}
+      <div className="flex w-full min-w-0 flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Button tone="zinc" icon={<FiUpload />} onClick={() => addAudit({ at: Date.now(), actor: 'You', action: 'Imported moderator list (demo)', severity: 'info' })}>
-              Import
-            </Button>
-            <Button tone="zinc" icon={<FiDownload />} onClick={() => addAudit({ at: Date.now(), actor: 'You', action: 'Exported moderator list (demo)', severity: 'info' })}>
-              Export
-            </Button>
-            <Button tone="emerald" icon={<FiUserPlus />} onClick={() => setInviteOpen(true)}>
-              Invite
-            </Button>
+            <h1 className="truncate text-lg font-bold text-zinc-100">🛡️ Moderation Team</h1>
+            <Chip tone="emerald">
+              <FiUsers />
+              {mods.length} moderators
+            </Chip>
+            <Chip tone="sky">
+              <FiBell />
+              {openAppeals.length} open appeals
+            </Chip>
+            <Chip tone="amber">
+              <FiShield />
+              Raid Mode: {raidConfig.enabled ? 'On' : 'Off'}
+            </Chip>
           </div>
+          <p className="mt-1 text-sm text-zinc-500">
+            Reputation scoring, appeals queue, and raid presets — designed for safer teams and fewer mistakes.
+          </p>
         </div>
 
-        {/* Stats */}
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="Active" value={stats.active} icon={<FiUsers />} />
-          <StatCard label="Invited" value={stats.invited} icon={<FiClock />} />
-          <StatCard label="Suspended" value={stats.suspended} icon={<FiAlertTriangle />} />
-          <StatCard label="Avg trust" value={`${stats.avgTrust}%`} icon={<FiShield />} />
-        </div>
+        <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <div className="w-full sm:w-72">
+            <Input value={query} onChange={setQuery} placeholder="Search mods by name, handle, role…" right={<FiSearch />} />
+          </div>
 
-        {/* Filters */}
-        <div className="mt-4">
-          <Card
-            title="Filters"
-            icon={<FiSearch className="text-zinc-300" />}
-            right={
-              <div className="flex items-center gap-2">
-                <Chip tone="zinc">{filtered.length} shown</Chip>
-                <button
-                  onClick={() => {
-                    setQ('');
-                    setRole('All');
-                    setStatus('all');
-                    setSort('trust');
-                  }}
-                  className="text-xs text-emerald-400 hover:underline"
-                >
-                  Reset
-                </button>
-              </div>
-            }
-            bodyClass="space-y-3"
+          <Button
+            tone="zinc"
+            icon={<FiPlus />}
+            onClick={() => {
+              // demo placeholder
+              alert('Add Moderator (wire to invite flow later)');
+            }}
           >
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-              <div className="md:col-span-5">
-                <TextInput value={q} onChange={setQ} placeholder="Search by name or handle…" left={<FiSearch />} />
-              </div>
-
-              <div className="md:col-span-2">
-                <Select
-                  label="Role"
-                  value={role}
-                  onChange={(v) => setRole(v as Role | 'All')}
-                  options={['All', 'Owner', 'Admin', 'Moderator', 'Helper', 'Bot']}
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <Select
-                  label="Status"
-                  value={status}
-                  onChange={(v) => setStatus(v as ModStatus | 'all')}
-                  options={['all', 'active', 'invited', 'suspended']}
-                />
-              </div>
-
-              <div className="md:col-span-3">
-                <Select
-                  label="Sort"
-                  value={sort}
-                  onChange={(v) => setSort(v as any)}
-                  options={['trust', 'recent', 'alpha']}
-                  formatOption={(o) => (o === 'trust' ? 'Trust score' : o === 'recent' ? 'Recent activity' : 'A → Z')}
-                />
-              </div>
-            </div>
-
-            {selectedIds.length > 0 && (
-              <div className="flex flex-col gap-2 rounded-lg border border-zinc-800 bg-zinc-950 p-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm text-zinc-200">
-                  <span className="font-semibold">{selectedIds.length}</span> selected
-                  <span className="ml-2 text-xs text-zinc-400">Bulk actions apply to selected items only.</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button tone="zinc" icon={<FiUnlock />} onClick={bulkReinstate}>
-                    Reinstate
-                  </Button>
-                  <Button tone="zinc" icon={<FiLock />} onClick={bulkSuspend}>
-                    Suspend
-                  </Button>
-                  <Button tone="rose" icon={<FiTrash2 />} onClick={bulkRemove}>
-                    Remove
-                  </Button>
-                  <button onClick={clearSelection} className="text-xs text-zinc-400 hover:underline">
-                    Clear
-                  </button>
-                </div>
-              </div>
-            )}
-          </Card>
+            Add mod
+          </Button>
         </div>
+      </div>
 
-        {/* Main grid */}
-        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-12">
-          {/* List */}
-          <div className="lg:col-span-8 min-w-0">
+      {/* Tabs */}
+      <div className="flex w-full min-w-0 flex-wrap gap-2">
+        <TabButton active={tab === 'mods'} onClick={() => setTab('mods')} icon={<FiUsers />}>
+          Moderators
+        </TabButton>
+        <TabButton active={tab === 'appeals'} onClick={() => setTab('appeals')} icon={<FiAlertTriangle />}>
+          Appeals Queue
+          {openAppeals.length ? (
+            <span className="ml-2 rounded-full bg-rose-600 px-2 py-0.5 text-xs text-white">{openAppeals.length}</span>
+          ) : null}
+        </TabButton>
+        <TabButton active={tab === 'raid'} onClick={() => setTab('raid')} icon={<FiZap />}>
+          Raid Mode
+        </TabButton>
+      </div>
+
+      {/* Content */}
+      {tab === 'mods' ? (
+        <div className="grid w-full min-w-0 grid-cols-12 gap-4">
+          {/* Left: list */}
+          <div className="col-span-12 xl:col-span-8">
             <Card
-              title="Team"
+              title="Moderator Roster"
               icon={<FiUsers className="text-emerald-400" />}
               right={
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={toggleSelectAll}
-                    className="text-xs text-zinc-300 hover:text-emerald-300"
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-2 text-xs text-zinc-400">
+                    <FiFilter />
+                    Filters
+                  </span>
+
+                  <select
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-2 text-xs text-zinc-200 outline-none focus:border-emerald-600"
                   >
-                    Toggle select visible
-                  </button>
+                    <option value="all">All roles</option>
+                    {ROLE_TEMPLATES.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as any)}
+                    className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-2 text-xs text-zinc-200 outline-none focus:border-emerald-600"
+                  >
+                    <option value="all">All status</option>
+                    <option value="active">Active</option>
+                    <option value="paused">Paused</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
+
+                  <select
+                    value={sortKey}
+                    onChange={(e) => setSortKey(e.target.value as any)}
+                    className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-2 text-xs text-zinc-200 outline-none focus:border-emerald-600"
+                  >
+                    <option value="reputation">Sort: Reputation</option>
+                    <option value="actions">Sort: Actions</option>
+                    <option value="recent">Sort: Recent</option>
+                  </select>
                 </div>
               }
-              bodyClass="p-0"
             >
-              <div className="min-w-0 overflow-x-auto">
-                <table className="w-full min-w-[720px] border-collapse">
-                  <thead className="bg-zinc-950/80 text-left text-xs text-zinc-400">
-                    <tr>
-                      <th className="px-4 py-3">Sel</th>
-                      <th className="px-4 py-3">Moderator</th>
-                      <th className="px-4 py-3">Role</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Trust</th>
-                      <th className="px-4 py-3">Last active</th>
-                      <th className="px-4 py-3">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((m) => (
-                      <tr key={m.id} className="border-t border-zinc-900 hover:bg-zinc-950/40">
-                        <td className="px-4 py-3">
-                          <input
-                            type="checkbox"
-                            checked={!!selected[m.id]}
-                            onChange={(e) => setSelected((prev) => ({ ...prev, [m.id]: e.target.checked }))}
-                            className="h-4 w-4 accent-emerald-500"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <AvatarSeed seed={m.handle} />
+              <div className="grid w-full min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
+                {filteredMods.map((m) => {
+                  const role = roleById.get(m.roleId);
+                  const rep = (m as any).reputation as number;
+
+                  const statusTone: Tone =
+                    m.status === 'active' ? 'emerald' : m.status === 'paused' ? 'amber' : 'rose';
+                  const trustTone: Tone = m.trust === 'senior' ? 'rose' : m.trust === 'trusted' ? 'sky' : 'zinc';
+
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => setSelectedModId(m.id)}
+                      className="w-full min-w-0 rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-left hover:border-zinc-700"
+                    >
+                      <div className="flex min-w-0 items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Avatar name={m.name} />
                             <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="truncate font-semibold text-zinc-100">{m.name}</span>
-                                {m.verified && <Chip tone="sky">Verified</Chip>}
-                                {m.role === 'Bot' && <Chip tone="zinc">Automation</Chip>}
-                              </div>
-                              <div className="truncate text-xs text-zinc-400">{m.handle}</div>
-                              {m.notes && <div className="mt-1 line-clamp-1 text-xs text-zinc-500">{m.notes}</div>}
+                              <div className="truncate text-sm font-semibold text-zinc-100">{m.name}</div>
+                              <div className="truncate text-xs text-zinc-500">{m.handle}</div>
                             </div>
                           </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Chip tone={m.role === 'Admin' ? 'emerald' : m.role === 'Owner' ? 'amber' : 'zinc'}>{m.role}</Chip>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Chip tone={m.status === 'active' ? 'emerald' : m.status === 'invited' ? 'sky' : 'rose'}>
-                            {m.status}
+
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <Chip tone={role?.tone ?? 'zinc'}>
+                              <FiTag />
+                              {role?.name ?? 'Role'}
+                            </Chip>
+                            <Chip tone={statusTone}>{m.status}</Chip>
+                            <Chip tone={trustTone}>
+                              <FiAward />
+                              {m.trust}
+                            </Chip>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-none items-center gap-2">
+                          <Chip tone={rep >= 85 ? 'emerald' : rep >= 70 ? 'sky' : rep >= 55 ? 'amber' : 'rose'}>
+                            Rep {rep}
                           </Chip>
-                        </td>
-                        <td className="px-4 py-3">
-                          <TrustBar score={m.trustScore} />
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-300">
-                          {fmtRelative(m.lastActiveAt)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <RowMenu onEdit={() => openEdit(m)} />
-                        </td>
-                      </tr>
-                    ))}
-                    {!filtered.length && (
-                      <tr>
-                        <td colSpan={7} className="px-4 py-10 text-center text-sm text-zinc-400">
-                          No moderators match your filters.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                          <FiChevronRight className="text-zinc-500" />
+                        </div>
+                      </div>
+
+                      <div className="mt-3">
+                        <Progress value={rep} />
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
+                          <span className="inline-flex items-center gap-1">
+                            <FiClock /> Active {fmtRelative(m.lastActiveAt)}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <FiSlash /> Reversals {m.stats.reversals}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <FiShield /> Actions {m.stats.actionsTotal}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {!filteredMods.length ? (
+                <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-10 text-center text-sm text-zinc-500">
+                  No moderators match those filters.
+                </div>
+              ) : null}
+            </Card>
+          </div>
+
+          {/* Right: role templates + scoring explainer */}
+          <div className="col-span-12 xl:col-span-4 space-y-4">
+            <Card
+              title="Role Templates (fast + safe)"
+              icon={<FiShield className="text-sky-400" />}
+              right={
+                <Button tone="zinc" icon={<FiRefreshCw />} onClick={() => alert('Sync templates (wire later)')}>
+                  Sync
+                </Button>
+              }
+            >
+              <div className="space-y-3">
+                {ROLE_TEMPLATES.map((r) => (
+                  <div key={r.id} className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <Chip tone={r.tone}>{r.name}</Chip>
+                      <span className="text-xs text-zinc-500">{r.permissions.length} perms</span>
+                    </div>
+                    <p className="mt-2 text-sm text-zinc-300">{r.description}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {r.permissions.slice(0, 6).map((p) => (
+                        <Chip key={p} tone="zinc">
+                          {p}
+                        </Chip>
+                      ))}
+                      {r.permissions.length > 6 ? <Chip tone="zinc">+{r.permissions.length - 6} more</Chip> : null}
+                    </div>
+                  </div>
+                ))}
               </div>
             </Card>
 
-            <div className="mt-3 flex items-start gap-2 text-xs text-zinc-500">
-              <FiInfo className="mt-0.5" />
-              <p className="min-w-0">
-                “Trust score” is a platform-side metric you can compute later (response time, reversal rate, reports accuracy, etc.).
-                Keeping it visible encourages safer moderation behavior.
-              </p>
-            </div>
-          </div>
-
-          {/* Right rail */}
-          <div className="lg:col-span-4 min-w-0 space-y-4">
-            <Card
-              title="Permission templates"
-              icon={<FiShield className="text-emerald-400" />}
-              bodyClass="space-y-3"
-            >
-              {PERM_TEMPLATES.map((t) => (
-                <div key={t.id} className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-zinc-100">{t.name}</span>
-                        <Chip tone="zinc">{t.perms.length} perms</Chip>
-                      </div>
-                      <p className="mt-1 text-xs text-zinc-400">{t.description}</p>
-                    </div>
-                    <Button
-                      tone="zinc"
-                      className="px-2 py-1 text-xs"
-                      onClick={() => {
-                        setInviteTemplate(t.id);
-                        setInviteOpen(true);
-                      }}
-                    >
-                      Use
-                    </Button>
-                  </div>
-
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {t.perms.slice(0, 5).map((p) => (
-                      <Chip key={p} tone={riskTone(permRisk(p))}>{shortPerm(p)}</Chip>
-                    ))}
-                    {t.perms.length > 5 && <Chip tone="zinc">+{t.perms.length - 5}</Chip>}
-                  </div>
+            <Card title="Reputation Score (explainable)" icon={<FiAward className="text-emerald-400" />}>
+              <div className="space-y-2 text-sm text-zinc-300">
+                <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+                  <div className="font-medium text-zinc-200">Why it’s better</div>
+                  <p className="mt-1 text-zinc-400">
+                    Most platforms don’t quantify moderation quality. Here we score performance using a few signals:
+                    reversals, appeals overturns, tenure, and action volume — capped and easy to audit.
+                  </p>
                 </div>
-              ))}
-            </Card>
-
-            <Card
-              title="Audit trail"
-              icon={<FiClock className="text-emerald-400" />}
-              right={<Chip tone="zinc">{audit.length} events</Chip>}
-              bodyClass="space-y-3"
-            >
-              {audit.slice(0, 8).map((e) => (
-                <div key={e.id} className="flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-950 p-3">
-                  <div className={cx('mt-0.5 h-2.5 w-2.5 rounded-full', e.severity === 'danger' ? 'bg-rose-500' : e.severity === 'warn' ? 'bg-amber-500' : 'bg-emerald-500')} />
-                  <div className="min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="truncate text-sm text-zinc-200">{e.action}</div>
-                      <div className="shrink-0 text-xs text-zinc-500">{fmtRelative(e.at)}</div>
-                    </div>
-                    <div className="mt-1 text-xs text-zinc-400">
-                      <span className="text-zinc-300">{e.actor}</span>
-                      {e.target ? <span> → <span className="text-zinc-300">{e.target}</span></span> : null}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <DividerLabel>Safety note</DividerLabel>
-              <p className="text-xs text-zinc-500">
-                Keeping a visible audit trail protects you and the platform: accountability reduces reckless bans/timeouts and helps with disputes.
-              </p>
+                <ul className="space-y-2 text-zinc-400">
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-emerald-400">
+                      <FiCheck />
+                    </span>
+                    Lower reversal & overturn rates improve score.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-emerald-400">
+                      <FiCheck />
+                    </span>
+                    Tenure + volume bonuses are capped (no “farm actions”).
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-emerald-400">
+                      <FiCheck />
+                    </span>
+                    Status penalties (paused/suspended) prevent false confidence.
+                  </li>
+                </ul>
+              </div>
             </Card>
           </div>
         </div>
+      ) : null}
 
-        {/* Invite Panel */}
-        {inviteOpen && (
-          <Modal onClose={() => setInviteOpen(false)} title="Invite moderator">
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
-                <div className="sm:col-span-6">
-                  <label className="text-xs text-zinc-400">Handle</label>
-                  <TextInput value={inviteHandle} onChange={setInviteHandle} placeholder="@username" left={<FiUserPlus />} />
+      {tab === 'appeals' ? (
+        <div className="grid w-full min-w-0 grid-cols-12 gap-4">
+          <div className="col-span-12 xl:col-span-8">
+            <Card
+              title="Appeals Queue (fast resolution)"
+              icon={<FiAlertTriangle className="text-amber-300" />}
+              right={
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip tone="rose">{openAppeals.length} open</Chip>
+                  <Chip tone="emerald">{appealsApproved.length} approved</Chip>
+                  <Chip tone="zinc">{appealsDenied.length} denied</Chip>
                 </div>
+              }
+            >
+              {/* Mobile cards */}
+              <div className="space-y-3 md:hidden">
+                {appeals.map((a) => {
+                  const mod = modsWithReputation.find((m) => m.id === a.byModId);
+                  return (
+                    <div key={a.id} className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-zinc-100">
+                            {a.user.name}{' '}
+                            <span className="text-xs font-normal text-zinc-500">{a.user.handle}</span>
+                          </div>
+                          <div className="mt-1 text-xs text-zinc-500">
+                            Action: <span className="text-zinc-300">{a.action.type}</span>{' '}
+                            {a.action.duration ? <span className="text-zinc-400">({a.action.duration})</span> : null}
+                          </div>
+                          <div className="mt-1 text-xs text-zinc-500">
+                            By: <span className="text-zinc-300">{mod?.name ?? 'Unknown mod'}</span> • {fmtRelative(a.createdAt)}
+                          </div>
+                        </div>
+                        <Chip tone={a.status === 'open' ? 'rose' : a.status === 'approved' ? 'emerald' : 'zinc'}>
+                          {a.status}
+                        </Chip>
+                      </div>
 
-                <div className="sm:col-span-6">
-                  <Select
-                    label="Template"
-                    value={inviteTemplate}
-                    onChange={setInviteTemplate}
-                    options={PERM_TEMPLATES.map((t) => t.id)}
-                    formatOption={(id) => PERM_TEMPLATES.find((t) => t.id === id)?.name ?? id}
-                  />
-                </div>
+                      <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/30 p-3 text-sm text-zinc-300">
+                        {a.reason}
+                      </div>
+
+                      {a.status === 'open' ? (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button
+                            tone="emerald"
+                            icon={<FiCheck />}
+                            onClick={() => resolveAppeal(a.id, 'approved', 'Approved (demo)')}
+                            className="flex-1"
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            tone="rose"
+                            icon={<FiX />}
+                            onClick={() => resolveAppeal(a.id, 'denied', 'Denied (demo)')}
+                            className="flex-1"
+                          >
+                            Deny
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="mt-3 text-xs text-zinc-500">
+                          Internal note: <span className="text-zinc-300">{a.internalNote ?? '—'}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
-              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-zinc-100">Preview permissions</div>
-                  <Chip tone="zinc">
-                    {(PERM_TEMPLATES.find((t) => t.id === inviteTemplate)?.perms.length ?? 0)} perms
-                  </Chip>
+              {/* Desktop table */}
+              <div className="hidden md:block">
+                <div className="w-full overflow-x-auto">
+                  <table className="min-w-[820px] w-full text-left text-sm">
+                    <thead className="text-xs text-zinc-500">
+                      <tr className="border-b border-zinc-800">
+                        <th className="px-2 py-2">User</th>
+                        <th className="px-2 py-2">Action</th>
+                        <th className="px-2 py-2">By</th>
+                        <th className="px-2 py-2">Created</th>
+                        <th className="px-2 py-2">Status</th>
+                        <th className="px-2 py-2">Decision</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {appeals.map((a) => {
+                        const mod = modsWithReputation.find((m) => m.id === a.byModId);
+                        return (
+                          <tr key={a.id} className="border-b border-zinc-800/60">
+                            <td className="px-2 py-3">
+                              <div className="text-zinc-100">{a.user.name}</div>
+                              <div className="text-xs text-zinc-500">{a.user.handle}</div>
+                            </td>
+                            <td className="px-2 py-3 text-zinc-300">
+                              {a.action.type} {a.action.duration ? <span className="text-zinc-500">({a.action.duration})</span> : null}
+                            </td>
+                            <td className="px-2 py-3 text-zinc-300">{mod?.name ?? 'Unknown'}</td>
+                            <td className="px-2 py-3 text-zinc-500">{fmtRelative(a.createdAt)}</td>
+                            <td className="px-2 py-3">
+                              <Chip tone={a.status === 'open' ? 'rose' : a.status === 'approved' ? 'emerald' : 'zinc'}>{a.status}</Chip>
+                            </td>
+                            <td className="px-2 py-3">
+                              {a.status === 'open' ? (
+                                <div className="flex flex-wrap gap-2">
+                                  <Button tone="emerald" icon={<FiCheck />} onClick={() => resolveAppeal(a.id, 'approved', 'Approved (demo)')}>
+                                    Approve
+                                  </Button>
+                                  <Button tone="rose" icon={<FiX />} onClick={() => resolveAppeal(a.id, 'denied', 'Denied (demo)')}>
+                                    Deny
+                                  </Button>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-zinc-500">{a.internalNote ?? '—'}</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {(PERM_TEMPLATES.find((t) => t.id === inviteTemplate)?.perms ?? []).map((p) => (
-                    <Chip key={p} tone={riskTone(permRisk(p))}>
-                      {shortPerm(p)}
-                    </Chip>
-                  ))}
-                </div>
+              </div>
+            </Card>
+          </div>
 
-                <div className="mt-3 flex items-start gap-2 text-xs text-zinc-500">
-                  <FiInfo className="mt-0.5" />
-                  <p className="min-w-0">
-                    We recommend limiting <span className="text-zinc-300">high-risk</span> perms (ban/manage mods/settings) to Admins only.
+          <div className="col-span-12 xl:col-span-4 space-y-4">
+            <Card title="What’s different vs most platforms" icon={<FiShield className="text-emerald-400" />}>
+              <div className="space-y-2 text-sm text-zinc-400">
+                <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+                  <div className="text-zinc-200 font-medium">Appeals are first-class</div>
+                  <p className="mt-1">
+                    Instead of scattered DMs, you get a queue with decisions, notes, and a clean audit trail — safer for you and your mods.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+                  <div className="text-zinc-200 font-medium">Less liability</div>
+                  <p className="mt-1">
+                    Decisions are documented, consistent, and exportable. That’s huge when something escalates.
                   </p>
                 </div>
               </div>
+            </Card>
 
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <Button tone="zinc" onClick={() => setInviteOpen(false)} icon={<FiX />}>
-                  Cancel
+            <Card title="Quick Actions (demo)" icon={<FiClock className="text-sky-400" />}>
+              <div className="flex flex-wrap gap-2">
+                <Button tone="zinc" icon={<FiRefreshCw />} onClick={() => alert('Refresh queue (wire later)')}>
+                  Refresh
                 </Button>
-                <Button tone="emerald" onClick={invite} icon={<FiCheck />}>
-                  Send invite
+                <Button
+                  tone="zinc"
+                  icon={<FiLock />}
+                  onClick={() => alert('Require 2-step approval for bans/purges (wire later)')}
+                >
+                  Enable dual-control
                 </Button>
               </div>
-            </div>
-          </Modal>
-        )}
+            </Card>
+          </div>
+        </div>
+      ) : null}
 
-        {/* Edit Panel */}
-        {editing && (
-          <EditDrawer
-            mod={editing}
-            onClose={() => setEditing(null)}
-            onSave={saveEdit}
-            onRemove={() => removeOne(editing.id)}
+      {tab === 'raid' ? (
+        <div className="grid w-full min-w-0 grid-cols-12 gap-4">
+          <div className="col-span-12 xl:col-span-7 space-y-4">
+            <Card
+              title="Raid Mode Presets (one-click defense)"
+              icon={<FiZap className="text-amber-300" />}
+              right={
+                <Chip tone={raidConfig.enabled ? 'emerald' : 'zinc'}>
+                  <FiShield /> {raidConfig.enabled ? 'Enabled' : 'Disabled'}
+                </Chip>
+              }
+            >
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <PresetCard
+                  title="Shield"
+                  tone="sky"
+                  subtitle="Soft protection"
+                  bullets={['Trusted-only links', 'Account age ≥ 7 days', 'Auto-timeout new accounts']}
+                  onApply={() => applyRaidPreset('shield')}
+                />
+                <PresetCard
+                  title="Followers-Only"
+                  tone="amber"
+                  subtitle="Medium lockdown"
+                  bullets={['Followers-only chat', 'Strict links', 'Auto-timeout new accounts']}
+                  onApply={() => applyRaidPreset('followers-only')}
+                />
+                <PresetCard
+                  title="Lockdown"
+                  tone="rose"
+                  subtitle="Hard defense"
+                  bullets={['Followers-only + age ≥ 14', 'Keyword lock', 'Slowmode 30s']}
+                  onApply={() => applyRaidPreset('lockdown')}
+                />
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button tone={raidConfig.enabled ? 'rose' : 'emerald'} icon={<FiShield />} onClick={() => setRaidConfig((c) => ({ ...c, enabled: !c.enabled }))}>
+                  {raidConfig.enabled ? 'Disable Raid Mode' : 'Enable Raid Mode'}
+                </Button>
+                <Button tone="zinc" icon={<FiRefreshCw />} onClick={() => setRaidConfig((c) => ({ ...c, presetId: undefined }))}>
+                  Clear preset tag
+                </Button>
+              </div>
+            </Card>
+
+            <Card title="Fine Controls" icon={<FiSlidersMini />} bodyClassName="space-y-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <Toggle
+                  on={raidConfig.followersOnly}
+                  onToggle={() => setRaidConfig((c) => ({ ...c, followersOnly: !c.followersOnly }))}
+                  label="Followers-only chat"
+                  description="Stops drive-by spam from brand new viewers."
+                />
+                <Toggle
+                  on={raidConfig.capsFilter}
+                  onToggle={() => setRaidConfig((c) => ({ ...c, capsFilter: !c.capsFilter }))}
+                  label="Caps / spam filter"
+                  description="Auto-detect excessive caps + repetitive messages."
+                />
+                <Toggle
+                  on={raidConfig.keywordLock}
+                  onToggle={() => setRaidConfig((c) => ({ ...c, keywordLock: !c.keywordLock }))}
+                  label="Keyword lock"
+                  description="Temporarily blocks risky keywords while under attack."
+                />
+                <Toggle
+                  on={raidConfig.autoTimeoutNewAccounts}
+                  onToggle={() => setRaidConfig((c) => ({ ...c, autoTimeoutNewAccounts: !c.autoTimeoutNewAccounts }))}
+                  label="Auto-timeout new accounts"
+                  description="Auto-timeouts accounts below the min-age threshold."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <NumberField
+                  label="Slow mode (seconds)"
+                  value={raidConfig.slowModeSeconds}
+                  min={0}
+                  max={120}
+                  onChange={(v) => setRaidConfig((c) => ({ ...c, slowModeSeconds: v }))}
+                />
+                <NumberField
+                  label="Min account age (days)"
+                  value={raidConfig.minAccountAgeDays}
+                  min={0}
+                  max={365}
+                  onChange={(v) => setRaidConfig((c) => ({ ...c, minAccountAgeDays: v }))}
+                />
+                <NumberField
+                  label="Auto-timeout (seconds)"
+                  value={raidConfig.autoTimeoutSeconds}
+                  min={5}
+                  max={600}
+                  onChange={(v) => setRaidConfig((c) => ({ ...c, autoTimeoutSeconds: v }))}
+                />
+              </div>
+
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+                <div className="text-sm font-medium text-zinc-200">Link filtering</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(['off', 'trusted-only', 'strict'] as const).map((k) => (
+                    <Button
+                      key={k}
+                      tone={raidConfig.linkFiltering === k ? 'emerald' : 'zinc'}
+                      onClick={() => setRaidConfig((c) => ({ ...c, linkFiltering: k }))}
+                      className="px-3 py-2 text-xs"
+                    >
+                      {k}
+                    </Button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-zinc-500">
+                  “Trusted-only” allows links from trusted users/mods. “Strict” blocks most links.
+                </p>
+              </div>
+            </Card>
+          </div>
+
+          <div className="col-span-12 xl:col-span-5 space-y-4">
+            <Card title="Live Preview (what will happen)" icon={<FiShield className="text-emerald-400" />}>
+              <div className="space-y-2 rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-sm text-zinc-300">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-zinc-500">Status</span>
+                  <Chip tone={raidConfig.enabled ? 'emerald' : 'zinc'}>{raidConfig.enabled ? 'On' : 'Off'}</Chip>
+                </div>
+
+                <PreviewRow label="Preset tag" value={raidConfig.presetId ?? '—'} />
+                <PreviewRow label="Followers-only" value={raidConfig.followersOnly ? 'Yes' : 'No'} />
+                <PreviewRow label="Slowmode" value={`${raidConfig.slowModeSeconds}s`} />
+                <PreviewRow label="Min account age" value={`${raidConfig.minAccountAgeDays} days`} />
+                <PreviewRow label="Link filtering" value={raidConfig.linkFiltering} />
+                <PreviewRow label="Caps filter" value={raidConfig.capsFilter ? 'On' : 'Off'} />
+                <PreviewRow label="Keyword lock" value={raidConfig.keywordLock ? 'On' : 'Off'} />
+                <PreviewRow
+                  label="Auto-timeout"
+                  value={raidConfig.autoTimeoutNewAccounts ? `On (${raidConfig.autoTimeoutSeconds}s)` : 'Off'}
+                />
+              </div>
+
+              <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-xs text-zinc-500">
+                Pro idea: log “raid events” and auto-suggest the best preset based on spam rate + account age distribution.
+              </div>
+            </Card>
+
+            <Card title="Why this beats most platforms" icon={<FiAward className="text-sky-400" />}>
+              <ul className="space-y-2 text-sm text-zinc-400">
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 text-emerald-400">
+                    <FiCheck />
+                  </span>
+                  One-click presets + editable controls (most platforms are either too simple or too hidden).
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 text-emerald-400">
+                    <FiCheck />
+                  </span>
+                  Preview is explicit — everyone knows what’s active during a raid.
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 text-emerald-400">
+                    <FiCheck />
+                  </span>
+                  Built to support dual-control for extreme actions later.
+                </li>
+              </ul>
+            </Card>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Drawer */}
+      {selectedMod ? (
+        <>
+          <button
+            aria-label="Close moderator drawer"
+            className="fixed inset-0 z-40 bg-black/60"
+            onClick={() => setSelectedModId(null)}
           />
-        )}
-      </div>
+          <aside className="fixed right-0 top-0 z-50 h-full w-full max-w-[520px] overflow-y-auto border-l border-zinc-800 bg-zinc-950">
+            <div className="flex items-start justify-between gap-3 border-b border-zinc-800 px-4 py-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <Avatar name={selectedMod.name} />
+                  <div className="min-w-0">
+                    <div className="truncate text-base font-semibold text-zinc-100">{selectedMod.name}</div>
+                    <div className="truncate text-sm text-zinc-500">{selectedMod.handle}</div>
+                  </div>
+                </div>
+              </div>
+              <Button tone="zinc" icon={<FiX />} onClick={() => setSelectedModId(null)}>
+                Close
+              </Button>
+            </div>
+
+            <div className="space-y-4 px-4 py-4">
+              <Card
+                title="Performance"
+                icon={<FiAward className="text-emerald-400" />}
+                right={
+                  <Chip
+                    tone={
+                      (selectedMod as any).reputation >= 85
+                        ? 'emerald'
+                        : (selectedMod as any).reputation >= 70
+                        ? 'sky'
+                        : (selectedMod as any).reputation >= 55
+                        ? 'amber'
+                        : 'rose'
+                    }
+                  >
+                    Rep {(selectedMod as any).reputation}
+                  </Chip>
+                }
+                className="bg-zinc-900"
+              >
+                <div className="space-y-3">
+                  <Progress value={(selectedMod as any).reputation} />
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <Stat label="Actions" value={selectedMod.stats.actionsTotal.toLocaleString()} />
+                    <Stat label="Reversals" value={selectedMod.stats.reversals.toLocaleString()} />
+                    <Stat label="Appeals reviewed" value={selectedMod.stats.appealsReviewed.toLocaleString()} />
+                    <Stat label="Appeals overturned" value={selectedMod.stats.appealsOverturned.toLocaleString()} />
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    Tenure: {Math.floor((Date.now() - selectedMod.addedAt) / (1000 * 60 * 60 * 24))} days • Last active:{' '}
+                    {fmtRelative(selectedMod.lastActiveAt)}
+                  </div>
+                </div>
+              </Card>
+
+              <Card title="Role & Permissions" icon={<FiShield className="text-sky-400" />}>
+                {(() => {
+                  const role = roleById.get(selectedMod.roleId);
+                  if (!role) return <div className="text-sm text-zinc-500">Role not found.</div>;
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Chip tone={role.tone}>{role.name}</Chip>
+                        <Chip tone={selectedMod.status === 'active' ? 'emerald' : selectedMod.status === 'paused' ? 'amber' : 'rose'}>
+                          {selectedMod.status}
+                        </Chip>
+                        <Chip tone={selectedMod.trust === 'senior' ? 'rose' : selectedMod.trust === 'trusted' ? 'sky' : 'zinc'}>
+                          <FiAward /> {selectedMod.trust}
+                        </Chip>
+                      </div>
+                      <p className="text-sm text-zinc-400">{role.description}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {role.permissions.map((p) => (
+                          <Chip key={p} tone="zinc">
+                            {p}
+                          </Chip>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </Card>
+
+              <Card title="Guardrails (demo)" icon={<FiLock className="text-amber-300" />}>
+                <div className="space-y-2 text-sm text-zinc-400">
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-3">
+                    <div className="text-zinc-200 font-medium">Dual-control for high-risk actions</div>
+                    <p className="mt-1">
+                      Require 2-step approval for bans/purges when enabled (prevents misclicks + rogue actions).
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button tone="zinc" icon={<FiLock />} onClick={() => alert('Enable dual-control (wire later)')}>
+                      Enable dual-control
+                    </Button>
+                    <Button tone="zinc" icon={<FiClock />} onClick={() => alert('Set action rate limits (wire later)')}>
+                      Rate limits
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+
+              <Card title="Admin Actions" icon={<FiShield className="text-rose-400" />}>
+                <div className="flex flex-wrap gap-2">
+                  {selectedMod.status !== 'suspended' ? (
+                    <Button tone="rose" icon={<FiSlash />} onClick={() => toggleModStatus(selectedMod.id, 'suspended')}>
+                      Suspend
+                    </Button>
+                  ) : (
+                    <Button tone="emerald" icon={<FiCheck />} onClick={() => toggleModStatus(selectedMod.id, 'active')}>
+                      Reinstate
+                    </Button>
+                  )}
+                  {selectedMod.status === 'active' ? (
+                    <Button tone="amber" icon={<FiClock />} onClick={() => toggleModStatus(selectedMod.id, 'paused')}>
+                      Pause
+                    </Button>
+                  ) : (
+                    <Button tone="zinc" icon={<FiCheck />} onClick={() => toggleModStatus(selectedMod.id, 'active')}>
+                      Set active
+                    </Button>
+                  )}
+                  <Button tone="zinc" icon={<FiUsers />} onClick={() => alert('Edit role (wire later)')}>
+                    Change role
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          </aside>
+        </>
+      ) : null}
     </div>
   );
 }
 
 /* ──────────────────────────────────────────────────────────────────────────────
-  Subcomponents
+   Small helpers / subcomponents
 ────────────────────────────────────────────────────────────────────────────── */
-
-function StatCard({ label, value, icon }: { label: string; value: React.ReactNode; icon: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
-      <div className="flex items-center justify-between">
-        <div className="text-xs text-zinc-400">{label}</div>
-        <div className="text-zinc-400">{icon}</div>
-      </div>
-      <div className="mt-1 text-lg font-bold text-zinc-100">{value}</div>
-    </div>
-  );
-}
-
-function Select({
-  label,
-  value,
-  onChange,
-  options,
-  formatOption,
+function TabButton({
+  active,
+  onClick,
+  icon,
+  children,
 }: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: string[];
-  formatOption?: (o: string) => string;
+  active: boolean;
+  onClick: () => void;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="min-w-0">
-      <label className="text-xs text-zinc-400">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-emerald-600"
-      >
-        {options.map((o) => (
-          <option key={o} value={o}>
-            {formatOption ? formatOption(o) : o}
-          </option>
-        ))}
-      </select>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition ${
+        active ? 'border-emerald-600 bg-emerald-600/10 text-emerald-200' : 'border-zinc-800 bg-zinc-950 text-zinc-200 hover:border-zinc-700'
+      }`}
+    >
+      {icon}
+      <span className="truncate">{children}</span>
+    </button>
   );
 }
 
-function TrustBar({ score }: { score: number }) {
-  const tone = score >= 85 ? 'emerald' : score >= 70 ? 'sky' : score >= 55 ? 'amber' : 'rose';
-  const bar = tone === 'emerald' ? 'bg-emerald-500' : tone === 'sky' ? 'bg-sky-500' : tone === 'amber' ? 'bg-amber-500' : 'bg-rose-500';
+function Avatar({ name }: { name: string }) {
+  const initials = name
+    .split(' ')
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase())
+    .join('');
   return (
-    <div className="min-w-[140px]">
-      <div className="flex items-center justify-between text-xs text-zinc-400">
-        <span>{score}%</span>
-        <span className={cx('font-medium', tone === 'emerald' ? 'text-emerald-300' : tone === 'sky' ? 'text-sky-300' : tone === 'amber' ? 'text-amber-300' : 'text-rose-300')}>
-          {tone === 'emerald' ? 'High' : tone === 'sky' ? 'Good' : tone === 'amber' ? 'Watch' : 'Risk'}
-        </span>
-      </div>
-      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-zinc-900">
-        <div className={cx('h-full', bar)} style={{ width: `${Math.max(0, Math.min(100, score))}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function AvatarSeed({ seed }: { seed: string }) {
-  const initials = seed.replace('@', '').slice(0, 2).toUpperCase();
-  return (
-    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-zinc-800 bg-zinc-900 text-sm font-bold text-zinc-200">
+    <div className="grid h-9 w-9 place-items-center rounded-full border border-zinc-800 bg-zinc-900 text-xs font-semibold text-zinc-200">
       {initials}
     </div>
   );
 }
 
-function RowMenu({ onEdit }: { onEdit: () => void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      if (!ref.current) return;
-      if (!ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, []);
-
+function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-2 text-zinc-300 hover:bg-zinc-900"
-        aria-label="Row actions"
-      >
-        <FiMoreVertical />
-      </button>
-
-      {open && (
-        <div className="absolute right-0 top-11 z-20 w-44 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 shadow-xl">
-          <button
-            onClick={() => {
-              setOpen(false);
-              onEdit();
-            }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-900"
-          >
-            <FiEdit3 /> Edit
-          </button>
-        </div>
-      )}
+    <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+      <div className="text-xs text-zinc-500">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-zinc-100">{value}</div>
     </div>
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────────────────
-  Edit Drawer
-────────────────────────────────────────────────────────────────────────────── */
-
-function EditDrawer({
-  mod,
-  onClose,
-  onSave,
-  onRemove,
-}: {
-  mod: Moderator;
-  onClose: () => void;
-  onSave: (m: Moderator) => void;
-  onRemove: () => void;
-}) {
-  const [draft, setDraft] = useState<Moderator>(mod);
-
-  useEffect(() => setDraft(mod), [mod]);
-
-  const permsDetailed = useMemo(() => {
-    return ALL_PERMS.map((p) => ({
-      ...p,
-      enabled: draft.permissions.includes(p.key),
-    }));
-  }, [draft.permissions]);
-
-  const highRiskEnabled = permsDetailed.filter((p) => p.enabled && p.risk === 'high').length;
-
-  const togglePerm = (key: PermissionKey) => {
-    setDraft((prev) => {
-      const has = prev.permissions.includes(key);
-      return { ...prev, permissions: has ? prev.permissions.filter((p) => p !== key) : [...prev.permissions, key] };
-    });
-  };
-
-  const applyTemplate = (templateId: string) => {
-    const tmpl = PERM_TEMPLATES.find((t) => t.id === templateId);
-    if (!tmpl) return;
-    setDraft((prev) => ({
-      ...prev,
-      permissions: tmpl.perms,
-      role: tmpl.id === 'admin' ? 'Admin' : tmpl.id === 'helper' ? 'Helper' : 'Moderator',
-    }));
-  };
-
-  return (
-    <Modal title={`Edit ${mod.name}`} onClose={onClose} wide>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-7 space-y-4 min-w-0">
-          <Card
-            title="Profile"
-            icon={<FiUsers className="text-emerald-400" />}
-            bodyClass="space-y-3"
-          >
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
-              <div className="sm:col-span-6">
-                <label className="text-xs text-zinc-400">Display name</label>
-                <input
-                  value={draft.name}
-                  onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-emerald-600"
-                />
-              </div>
-              <div className="sm:col-span-6">
-                <label className="text-xs text-zinc-400">Handle</label>
-                <input
-                  value={draft.handle}
-                  onChange={(e) => setDraft((p) => ({ ...p, handle: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-emerald-600"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
-              <div className="sm:col-span-4">
-                <Select
-                  label="Status"
-                  value={draft.status}
-                  onChange={(v) => setDraft((p) => ({ ...p, status: v as ModStatus }))}
-                  options={['active', 'invited', 'suspended']}
-                />
-              </div>
-              <div className="sm:col-span-4">
-                <Select
-                  label="Role"
-                  value={draft.role}
-                  onChange={(v) => setDraft((p) => ({ ...p, role: v as Role }))}
-                  options={['Owner', 'Admin', 'Moderator', 'Helper', 'Bot']}
-                />
-              </div>
-              <div className="sm:col-span-4">
-                <label className="text-xs text-zinc-400">Trust score</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={draft.trustScore}
-                  onChange={(e) => setDraft((p) => ({ ...p, trustScore: clampInt(e.target.value, 0, 100) }))}
-                  className="mt-1 w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-emerald-600"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs text-zinc-400">Notes</label>
-              <textarea
-                value={draft.notes ?? ''}
-                onChange={(e) => setDraft((p) => ({ ...p, notes: e.target.value }))}
-                className="mt-1 min-h-[88px] w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-emerald-600"
-              />
-              <div className="mt-1 text-xs text-zinc-500">
-                Joined {fmtDate(draft.joinedAt)} • Last active {fmtRelative(draft.lastActiveAt)}
-              </div>
-            </div>
-          </Card>
-
-          <Card
-            title="Quick templates"
-            icon={<FiShield className="text-emerald-400" />}
-            bodyClass="space-y-2"
-          >
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {PERM_TEMPLATES.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => applyTemplate(t.id)}
-                  className="rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-left hover:bg-zinc-900"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="font-semibold text-zinc-100">{t.name}</div>
-                    <Chip tone="zinc">{t.perms.length}</Chip>
-                  </div>
-                  <div className="mt-1 text-xs text-zinc-400">{t.description}</div>
-                </button>
-              ))}
-            </div>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-5 space-y-4 min-w-0">
-          <Card
-            title="Permissions"
-            icon={<FiLock className="text-emerald-400" />}
-            right={
-              highRiskEnabled > 0 ? (
-                <Chip tone="rose">{highRiskEnabled} high-risk enabled</Chip>
-              ) : (
-                <Chip tone="emerald">No high-risk perms</Chip>
-              )
-            }
-            bodyClass="space-y-3"
-          >
-            <div className="text-xs text-zinc-500">
-              High-risk permissions increase liability. Keep them limited to Admins and ensure audit trail is enabled.
-            </div>
-
-            <div className="grid grid-cols-1 gap-2">
-              {permsDetailed.map((p) => (
-                <label
-                  key={p.key}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 hover:bg-zinc-900"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-zinc-200">{p.label}</span>
-                      <Chip tone={riskTone(p.risk)}>{p.risk}</Chip>
-                    </div>
-                    <div className="mt-0.5 text-xs text-zinc-500">{p.key}</div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={p.enabled}
-                    onChange={() => togglePerm(p.key)}
-                    className="h-4 w-4 shrink-0 accent-emerald-500"
-                  />
-                </label>
-              ))}
-            </div>
-          </Card>
-
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button tone="zinc" onClick={onClose} icon={<FiX />}>
-              Cancel
-            </Button>
-            <Button tone="emerald" onClick={() => onSave(draft)} icon={<FiCheck />}>
-              Save
-            </Button>
-            <Button tone="rose" onClick={onRemove} icon={<FiTrash2 />}>
-              Remove
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-/* ──────────────────────────────────────────────────────────────────────────────
-  Modal
-────────────────────────────────────────────────────────────────────────────── */
-
-function Modal({
+function PresetCard({
   title,
-  onClose,
-  children,
-  wide,
+  subtitle,
+  bullets,
+  onApply,
+  tone,
 }: {
   title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-  wide?: boolean;
+  subtitle: string;
+  bullets: string[];
+  onApply: () => void;
+  tone: Tone;
 }) {
-  // lock background scroll on mobile when modal open
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, []);
-
   return (
-    <>
-      <button
-        aria-label="Close modal"
-        onClick={onClose}
-        className="fixed inset-0 z-[80] bg-black/70"
-      />
-      <div className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto p-2 sm:p-6">
-        <div
-          className={cx(
-            'w-full min-w-0 rounded-xl border border-zinc-800 bg-black shadow-2xl',
-            wide ? 'max-w-5xl' : 'max-w-2xl'
-          )}
-        >
-          <div className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3">
-            <div className="min-w-0">
-              <div className="truncate text-sm font-semibold text-zinc-100">{title}</div>
-              <div className="text-xs text-zinc-500">Mobile-safe • min-w-0 • scrollable</div>
-            </div>
-            <button
-              onClick={onClose}
-              className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-2 text-zinc-300 hover:bg-zinc-900"
-              aria-label="Close"
-            >
-              <FiX />
-            </button>
+    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Chip tone={tone}>{title}</Chip>
           </div>
-          <div className="p-4">{children}</div>
+          <div className="mt-1 text-xs text-zinc-500">{subtitle}</div>
         </div>
+        <Button tone="emerald" icon={<FiZap />} onClick={onApply} className="px-3 py-2 text-xs">
+          Apply
+        </Button>
       </div>
-    </>
+      <ul className="mt-3 space-y-2 text-sm text-zinc-400">
+        {bullets.map((b, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <span className="mt-0.5 text-emerald-400">
+              <FiCheck />
+            </span>
+            <span className="min-w-0">{b}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────────────────
-  Helpers
-────────────────────────────────────────────────────────────────────────────── */
-
-function permRisk(k: PermissionKey): Risk {
-  return ALL_PERMS.find((p) => p.key === k)?.risk ?? 'low';
+function PreviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <span className="text-zinc-500">{label}</span>
+      <span className="text-zinc-200">{value}</span>
+    </div>
+  );
 }
 
-function riskTone(r: Risk): 'zinc' | 'sky' | 'amber' | 'rose' | 'emerald' {
-  if (r === 'low') return 'emerald';
-  if (r === 'med') return 'amber';
-  return 'rose';
+function NumberField({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+      <div className="text-xs text-zinc-500">{label}</div>
+      <div className="mt-2 flex items-center gap-2">
+        <input
+          type="number"
+          value={value}
+          min={min}
+          max={max}
+          onChange={(e) => onChange(clamp(parseInt(e.target.value || '0', 10), min, max))}
+          className="w-24 rounded-md border border-zinc-800 bg-zinc-900 px-2 py-2 text-sm text-zinc-200 outline-none focus:border-emerald-600"
+        />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(e) => onChange(clamp(parseInt(e.target.value, 10), min, max))}
+          className="w-full accent-emerald-500"
+        />
+      </div>
+    </div>
+  );
 }
 
-function shortPerm(k: PermissionKey) {
-  // compact labels for chips
-  if (k === 'chat:read') return 'Chat read';
-  if (k === 'chat:delete') return 'Delete';
-  if (k === 'chat:timeout') return 'Timeout';
-  if (k === 'chat:ban') return 'Ban';
-  if (k === 'chat:slowmode') return 'Slow mode';
-  if (k === 'chat:links') return 'Links';
-  if (k === 'reports:review') return 'Reports';
-  if (k === 'vod:moderate') return 'VOD';
-  if (k === 'settings:moderation') return 'Settings';
-  if (k === 'mods:manage') return 'Manage mods';
-  return k;
-}
-
-function clampInt(v: string, min: number, max: number) {
-  const n = parseInt(v, 10);
-  if (Number.isNaN(n)) return min;
-  return Math.max(min, Math.min(max, n));
+function FiSlidersMini() {
+  return (
+    <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-zinc-800 text-zinc-200">
+      <FiFilter />
+    </span>
+  );
 }
