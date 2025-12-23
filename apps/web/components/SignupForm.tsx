@@ -1,279 +1,295 @@
 'use client';
 
-import * as React from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
-import { logSupabaseError } from '@/utils/logError';
+import { useRouter } from 'next/navigation';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { FiArrowRight, FiCheckCircle, FiMail, FiUser, FiLock } from 'react-icons/fi';
 
-
-export default function SignupForm() {
-  const [error, setError] = React.useState<string | null>(null);
-  const [loading, setLoading] = React.useState(false);
-
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      const form = e.currentTarget;
-      const data = new FormData(form);
-
-      const email = String(data.get('email') || '');
-      const password = String(data.get('password') || '');
-      const confirm = String(data.get('confirm') || '');
-      const firstName = String(data.get('firstName') || '');
-      const lastName = String(data.get('lastName') || '');
-      const gender = String(data.get('gender') || '');
-      const dob = String(data.get('dob') || '');
-      const adultAck = data.get('adult_ack');
-
-      // --- Validation ---
-      if (password.length < 8) {
-        setError('Password must be at least 8 characters.');
-        return;
-      }
-      if (password !== confirm) {
-        setError('Passwords do not match.');
-        return;
-      }
-      if (!dob) {
-        setError('Please enter your date of birth.');
-        return;
-      }
-      if (!adultAck) {
-        setError('You must acknowledge adult content to continue.');
-        return;
-      }
-
-      const fullName = `${firstName} ${lastName}`.trim();
-
-      // --- SUPABASE SIGNUP ---
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            firstName,
-            lastName,
-            gender,
-            name: fullName,
-            dob,
-            adult_ack: true,
-          },
-        },
-      });
-
-      if (signUpError) {
-        setError(signUpError.message);
-        return;
-      }
-
-      const userId = signUpData?.user?.id;
-      if (!userId) {
-        setError("Auth session missing!");
-        return;
-      }
-
-const numericId = Date.now(); // Define it here so it's available later
-
-try {
-  const { error } = await supabase.from('User Signup List').insert([
-    {
-      id: numericId,
-      email: email,
-      name: `${firstName} ${lastName}`,
-      first_name: firstName,
-      last_name: lastName,
-      gender: gender,
-      dob: dob,
-      is_pro: false,
-      signed_up_at: new Date().toISOString(),
-      auth_user_id: userId,
-    },
-  ]);
-
-  if (error) {
-    logSupabaseError('Insert into User Signup List failed', error);
-    throw new Error('Custom table insert failed.');
-  }
-
-  console.log('✅ Inserted into custom table!');
-} catch (err: any) {
-  console.error('📛 Insert block error:', err.message || err);
+function cx(...v: Array<string | false | undefined | null>) {
+  return v.filter(Boolean).join(' ');
 }
 
-      // Update metadata if session available
-      if (signUpData?.session) {
-        await supabase.auth.updateUser({
-          data: {
-            firstName,
-            lastName,
-            gender,
-            name: fullName,
-            dob,
-            adult_ack: true,
-          },
-        });
-      }
+export default function SignupForm() {
+  const router = useRouter();
+  const supabase = createClientComponentClient();
 
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-      // Redirect
-      window.location.href = `/dashboard/${numericId}`;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-    } catch (err: any) {
-      console.error("Unexpected error:", err);
-      setError("Unexpected error occurred.");
-    } finally {
-      setLoading(false);
+  const emailRedirectTo = useMemo(() => {
+    if (typeof window === 'undefined') return undefined;
+    return `${window.location.origin}/auth/callback`;
+  }, []);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setNotice(null);
+
+    const name = displayName.trim();
+    if (!name) return setError('Please enter a display name.');
+    if (!email.trim()) return setError('Please enter an email.');
+    if (password.length < 8) return setError('Password must be at least 8 characters.');
+
+    setBusy(true);
+
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        emailRedirectTo,
+        data: { display_name: name },
+      },
+    });
+
+    setBusy(false);
+
+    if (error) {
+      setError(error.message);
+      return;
     }
-  };
+
+    // If email confirmations are ON, session is usually null here.
+    if (!data.session) {
+      setNotice('Check your email to confirm your account, then you’ll be redirected back here.');
+      return;
+    }
+
+    // If confirmations are OFF, go straight in.
+    router.push(`/dashboard/${data.user?.id}`);
+  }
+
+  const strength = useMemo(() => {
+    const p = password;
+    const checks = [
+      p.length >= 8,
+      /[A-Z]/.test(p),
+      /[0-9]/.test(p),
+      /[^A-Za-z0-9]/.test(p),
+    ];
+    const score = checks.filter(Boolean).length; // 0..4
+    const label = score <= 1 ? 'Weak' : score === 2 ? 'Okay' : score === 3 ? 'Good' : 'Strong';
+    return { score, label, checks };
+  }, [password]);
 
   return (
-    <div className="w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-xl">
-      <div className="mb-6 text-center">
-        <div className="inline-flex items-center gap-2">
-          <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-          <span className="text-lg font-semibold tracking-tight text-white">WeGoLive</span>
+    <div className="w-full min-w-0">
+      <div className="mx-auto w-full max-w-lg">
+        {/* Shell */}
+        <div className="rounded-3xl border border-zinc-800 bg-gradient-to-b from-zinc-950 to-black shadow-[0_0_0_1px_rgba(255,255,255,0.02)] overflow-hidden">
+          {/* Header */}
+          <div className="px-5 sm:px-7 py-6 border-b border-zinc-800/80">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-semibold text-white">Create your account</h1>
+                <p className="mt-1 text-sm text-zinc-400">
+                  Start streaming in minutes. Your creator dashboard is ready when you are.
+                </p>
+              </div>
+
+              <span className="shrink-0 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
+                WeGoLiveToday
+              </span>
+            </div>
+
+            {/* Micro benefits */}
+            <div className="mt-4 flex flex-wrap gap-2 text-xs">
+              <Badge>Safe-by-default</Badge>
+              <Badge>Fast onboarding</Badge>
+              <Badge>Creator tools built-in</Badge>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="px-5 sm:px-7 py-6">
+            {error && (
+              <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                <div className="font-medium mb-1">Something needs attention</div>
+                <div className="text-rose-200/90">{error}</div>
+              </div>
+            )}
+
+            {notice && (
+              <div className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                <div className="font-medium mb-1">Almost there</div>
+                <div className="text-emerald-200/90">{notice}</div>
+              </div>
+            )}
+
+            <form onSubmit={onSubmit} className="space-y-4">
+              <Field label="Display name" hint="This is what viewers will see.">
+                <InputShell icon={<FiUser className="text-zinc-400" />}>
+                  <input
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="w-full min-w-0 bg-transparent px-3 py-2.5 outline-none placeholder:text-zinc-600"
+                    placeholder="Your name"
+                    autoComplete="nickname"
+                  />
+                </InputShell>
+              </Field>
+
+              <Field label="Email" hint="Used for login and account security.">
+                <InputShell icon={<FiMail className="text-zinc-400" />}>
+                  <input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full min-w-0 bg-transparent px-3 py-2.5 outline-none placeholder:text-zinc-600"
+                    placeholder="you@email.com"
+                    autoComplete="email"
+                    inputMode="email"
+                  />
+                </InputShell>
+              </Field>
+
+              <Field label="Password" hint="Use 8+ characters. Mix letters + numbers for best results.">
+                <InputShell icon={<FiLock className="text-zinc-400" />}>
+                  <input
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    type="password"
+                    className="w-full min-w-0 bg-transparent px-3 py-2.5 outline-none placeholder:text-zinc-600"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                  />
+                </InputShell>
+
+                {/* Strength */}
+                <div className="mt-2 rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-xs text-zinc-400">Password strength</div>
+                    <div className="text-xs text-zinc-300">{strength.label}</div>
+                  </div>
+                  <div className="mt-2 flex gap-1">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className={cx(
+                          'h-1.5 flex-1 rounded-full',
+                          strength.score >= i + 1 ? 'bg-emerald-500/80' : 'bg-zinc-800'
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-zinc-400">
+                    <Rule ok={strength.checks[0]} label="8+ chars" />
+                    <Rule ok={strength.checks[1]} label="Uppercase" />
+                    <Rule ok={strength.checks[2]} label="Number" />
+                    <Rule ok={strength.checks[3]} label="Symbol" />
+                  </div>
+                </div>
+              </Field>
+
+              <button
+                disabled={busy}
+                className={cx(
+                  'mt-1 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition',
+                  'focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:ring-offset-0',
+                  busy
+                    ? 'bg-zinc-800 text-zinc-400 cursor-not-allowed'
+                    : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                )}
+              >
+                {busy ? 'Creating…' : 'Create account'}
+                {!busy && <FiArrowRight />}
+              </button>
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-1">
+                <p className="text-xs text-zinc-500">
+                  By continuing, you agree to our{' '}
+                  <span className="text-zinc-300">Terms</span> and{' '}
+                  <span className="text-zinc-300">Privacy</span>.
+                </p>
+
+                <Link
+                  href="/login"
+                  className="text-xs text-emerald-300 hover:text-emerald-200 inline-flex items-center gap-1"
+                >
+                  Already have an account? <span className="underline underline-offset-2">Sign in</span>
+                </Link>
+              </div>
+            </form>
+          </div>
+
+          {/* Footer */}
+          <div className="px-5 sm:px-7 py-4 border-t border-zinc-800/80 bg-zinc-950/40">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-zinc-500">
+              <span className="inline-flex items-center gap-2">
+                <FiCheckCircle className="text-emerald-400" />
+                Account creation is secured by Supabase Auth
+              </span>
+              <span>Tip: Press Tab to move between fields</span>
+            </div>
+          </div>
         </div>
-        <h1 className="mt-4 text-2xl font-semibold text-white">Create your account</h1>
-        <p className="mt-1 text-sm text-zinc-400">It only takes a minute.</p>
+
+        {/* Tiny note below card */}
+        <div className="mt-3 text-center text-xs text-zinc-600">
+          Need help? Open the <span className="text-zinc-400">Knowledge Base</span> once you’re in.
+        </div>
       </div>
+    </div>
+  );
+}
 
-      <form onSubmit={onSubmit} className="space-y-4 text-sm text-zinc-300">
-
-        {/* First Name */}
-        <div className="flex flex-col gap-1">
-          <label htmlFor="firstName">First Name</label>
-          <input
-            id="firstName"
-            name="firstName"
-            required
-            placeholder="John"
-            className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-white"
-          />
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block min-w-0">
+      <div className="flex items-end justify-between gap-3 min-w-0">
+        <div className="min-w-0">
+          <div className="text-sm font-medium text-zinc-200">{label}</div>
+          {hint && <div className="mt-0.5 text-xs text-zinc-500 break-words">{hint}</div>}
         </div>
-
-        {/* Last Name */}
-        <div className="flex flex-col gap-1">
-          <label htmlFor="lastName">Last Name</label>
-          <input
-            id="lastName"
-            name="lastName"
-            required
-            placeholder="Doe"
-            className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-white"
-          />
-        </div>
-
-        {/* Gender */}
-        <div className="flex flex-col gap-1">
-          <label htmlFor="gender">Gender</label>
-          <select
-            id="gender"
-            name="gender"
-            required
-            className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-white"
-          >
-            <option value="">Select gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-
-        {/* Email */}
-        <div className="flex flex-col gap-1">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            placeholder="you@example.com"
-            className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-white"
-          />
-        </div>
-
-        {/* Password */}
-        <div className="flex flex-col gap-1">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            placeholder="At least 8 characters"
-            className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-white"
-          />
-        </div>
-
-        {/* Confirm Password */}
-        <div className="flex flex-col gap-1">
-          <label htmlFor="confirm">Confirm Password</label>
-          <input
-            id="confirm"
-            name="confirm"
-            type="password"
-            required
-            placeholder="••••••••"
-            className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-white"
-          />
-        </div>
-
-        {/* DOB */}
-        <div className="flex flex-col gap-1">
-          <label htmlFor="dob">Date of Birth</label>
-          <input
-            id="dob"
-            name="dob"
-            type="date"
-            required
-            className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-white"
-          />
-        </div>
-
-        {/* Terms & Adult Acknowledgment */}
-        <div className="space-y-3 pt-2">
-          <label className="flex items-start gap-2">
-            <input type="checkbox" name="terms" required className="mt-1 h-4 w-4" />
-            <span>
-              I agree to the{' '}
-              <Link href="/terms" className="text-emerald-400 hover:underline">Terms</Link> and{' '}
-              <Link href="/privacy" className="text-emerald-400 hover:underline">Privacy</Link>.
-            </span>
-          </label>
-
-          <label className="flex items-start gap-2">
-            <input type="checkbox" name="adult_ack" required className="mt-1 h-4 w-4" />
-            <span>I acknowledge that adult content exists within WeGoLiveToday.</span>
-          </label>
-        </div>
-
-        {/* Error message */}
-        {error && <p className="text-sm text-rose-400">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="btn btn-primary w-full disabled:opacity-40"
-        >
-          {loading ? 'Creating Account...' : 'Create Account'}
-        </button>
-      </form>
-
-      {/* Footer */}
-      <div className="mt-6 text-center text-sm text-zinc-400">
-        Already have an account?{' '}
-        <Link href="/login" className="text-emerald-400 hover:text-emerald-300">Sign in</Link>
-        <br />
-        <Link
-          href="/guest-dashboard"
-          className="mt-3 inline-block border border-zinc-800 bg-zinc-900 px-3 py-2 rounded-md text-zinc-200 hover:bg-zinc-800/70"
-        >
-          Continue as guest
-        </Link>
       </div>
+      <div className="mt-2 min-w-0">{children}</div>
+    </label>
+  );
+}
+
+function InputShell({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center rounded-xl border border-zinc-800 bg-black/40 focus-within:border-emerald-600 transition min-w-0">
+      <div className="pl-3">{icon}</div>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}
+
+function Badge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-full border border-zinc-800 bg-zinc-900/60 px-3 py-1 text-zinc-300">
+      {children}
+    </span>
+  );
+}
+
+function Rule({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <div className="inline-flex items-center gap-2">
+      <span
+        className={cx(
+          'h-4 w-4 rounded-full border grid place-items-center',
+          ok ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' : 'border-zinc-700 bg-zinc-900 text-zinc-500'
+        )}
+        aria-hidden
+      >
+        {ok ? <FiCheckCircle className="h-3.5 w-3.5" /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
+      </span>
+      <span className={cx('text-xs', ok ? 'text-emerald-200' : 'text-zinc-400')}>{label}</span>
     </div>
   );
 }
