@@ -86,8 +86,8 @@ export default function LoginForm({ nextUrl }: { nextUrl?: string }) {
   // Load remembered email/username
   useEffect(() => {
     try {
-      const remembered = localStorage.getItem('wegolive.login.remember') === 'true';
-      const saved = localStorage.getItem('wegolive.login.email') || '';
+      const remembered = localStorage.getItem('wegoliveToday.login.remember') === 'true';
+      const saved = localStorage.getItem('wegoliveToday.login.email') || '';
       setRemember(remembered || saved.length > 0);
       if (saved) setEmailOrUsername(saved);
     } catch {
@@ -98,9 +98,9 @@ export default function LoginForm({ nextUrl }: { nextUrl?: string }) {
   // Persist remember choice + email/username
   useEffect(() => {
     try {
-      localStorage.setItem('wegolive.login.remember', String(remember));
-      if (remember) localStorage.setItem('wegolive.login.email', emailOrUsername);
-      else localStorage.removeItem('wegolive.login.email');
+      localStorage.setItem('wegoliveToday.login.remember', String(remember));
+      if (remember) localStorage.setItem('wegoliveToday.login.email', emailOrUsername);
+      else localStorage.removeItem('wegoliveToday.login.email');
     } catch {
       /* no-op */
     }
@@ -253,7 +253,7 @@ export default function LoginForm({ nextUrl }: { nextUrl?: string }) {
           <div className="text-center">
             <div className="inline-flex items-center gap-2">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-              <span className="text-sm font-semibold tracking-tight text-zinc-200">WeGoLive</span>
+              <span className="text-sm font-semibold tracking-tight text-zinc-200">WeGoLiveToday</span>
             </div>
             <h1 className="mt-4 text-2xl font-semibold text-white">Welcome back</h1>
             <p className="mt-1 text-sm text-zinc-400">Sign in to your creator dashboard</p>
@@ -307,7 +307,7 @@ export default function LoginForm({ nextUrl }: { nextUrl?: string }) {
                     <FiLock />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-medium text-zinc-100">WeGoLive Face ID</div>
+                    <div className="text-sm font-medium text-zinc-100">WeGoLiveToday Face ID</div>
                     <div className="text-xs text-zinc-400 break-words">
                       Fast sign-in using your device’s secure Face ID unlock (Passkeys).
                     </div>
