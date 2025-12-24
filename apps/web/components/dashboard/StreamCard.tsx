@@ -1,3 +1,5 @@
+//apps/dashboard/components/StreamCard.tsx
+
 import Link from 'next/link';
 import type { LiveCard } from '@/app/dashboard/page';
 
