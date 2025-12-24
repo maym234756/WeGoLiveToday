@@ -2,9 +2,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiEye, FiEyeOff, FiLoader, FiLock, FiKey } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiLoader, FiLock, FiKey, FiChevronRight } from 'react-icons/fi';
 import { supabase } from '@/lib/supabase';
 
 type AuthMode = 'face' | 'password';
@@ -31,21 +31,18 @@ function isMobileDevice() {
 async function supportsPasskeys() {
   if (typeof window === 'undefined') return false;
   if (!(window as any).PublicKeyCredential) return false;
-
-  // If available, this is the best “Face ID capable” signal we can get on the web.
-  // (Not perfect, but very practical.)
   try {
-    const available = await (window as any).PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable?.();
-    return !!available;
+    const ok =
+      (await (window as any).PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable?.()) ?? false;
+    return !!ok;
   } catch {
     return false;
   }
 }
 
-/**
- * Minimal base64url helpers for WebAuthn payloads.
- * Your API routes can return base64url strings and we convert them here.
- */
+/* ──────────────────────────────────────────────────────────────────────────────
+   WebAuthn base64url helpers (kept tiny + reliable)
+   ────────────────────────────────────────────────────────────────────────────── */
 function b64urlToBuf(b64url: string) {
   const pad = '='.repeat((4 - (b64url.length % 4)) % 4);
   const base64 = (b64url + pad).replace(/-/g, '+').replace(/_/g, '/');
@@ -55,6 +52,7 @@ function b64urlToBuf(b64url: string) {
   for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
   return buf;
 }
+
 function bufToB64url(buf: ArrayBuffer) {
   const bytes = new Uint8Array(buf);
   let str = '';
@@ -63,69 +61,115 @@ function bufToB64url(buf: ArrayBuffer) {
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
+function normalizeRequestOptions(options: any): PublicKeyCredentialRequestOptions {
+  // Server should return "PublicKeyCredentialRequestOptionsJSON"-like (challenge as base64url string).
+  // Convert to browser-native request options (ArrayBuffer types).
+  return {
+    ...options,
+    challenge: b64urlToBuf(options.challenge),
+    allowCredentials: (options.allowCredentials || []).map((c: any) => ({
+      ...c,
+      id: b64urlToBuf(c.id),
+    })),
+  };
+}
+
+function serializeAssertion(cred: PublicKeyCredential) {
+  const res = cred.response as AuthenticatorAssertionResponse;
+
+  return {
+    id: cred.id,
+    rawId: bufToB64url(cred.rawId),
+    type: cred.type,
+    clientExtensionResults: cred.getClientExtensionResults?.() ?? {},
+    response: {
+      clientDataJSON: bufToB64url(res.clientDataJSON),
+      authenticatorData: bufToB64url(res.authenticatorData),
+      signature: bufToB64url(res.signature),
+      userHandle: res.userHandle ? bufToB64url(res.userHandle) : null,
+    },
+  };
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   Component
+   ────────────────────────────────────────────────────────────────────────────── */
 export default function LoginForm({ nextUrl }: { nextUrl?: string }) {
   const router = useRouter();
 
-  // Password flow
-  const [emailOrUsername, setEmailOrUsername] = useState('');
+  /* ───────────── State: shared ───────────── */
+  const nextSafe = useMemo(() => safeNextUrl(nextUrl), [nextUrl]);
+  const [error, setError] = useState<string | null>(null);
+
+  /* ───────────── State: password flow ───────────── */
+  const [identifier, setIdentifier] = useState(''); // email for now (username can be supported later via lookup)
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [showPw, setShowPw] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
+  const [loadingPw, setLoadingPw] = useState(false);
 
-  // Face ID (passkey) flow
+  /* ───────────── State: passkey flow ───────────── */
   const [canFaceId, setCanFaceId] = useState(false);
   const [mode, setMode] = useState<AuthMode>('password');
-
-  const [error, setError] = useState<string | null>(null);
-  const [loadingPw, setLoadingPw] = useState(false);
   const [loadingFace, setLoadingFace] = useState(false);
 
-  const nextSafe = useMemo(() => safeNextUrl(nextUrl), [nextUrl]);
+  // Optional: use email to help server narrow allowCredentials (not required)
+  const [faceHintEmail, setFaceHintEmail] = useState('');
+  const [showFaceHint, setShowFaceHint] = useState(false);
 
-  // Load remembered email/username
+  // Abort support for FaceID prompt
+  const abortRef = useRef<AbortController | null>(null);
+
+  /* ───────────── LocalStorage: remember identifier ───────────── */
   useEffect(() => {
     try {
-      const remembered = localStorage.getItem('wegoliveToday.login.remember') === 'true';
-      const saved = localStorage.getItem('wegoliveToday.login.email') || '';
+      // Backward-compatible keys (in case you previously used different ones)
+      const remembered =
+        localStorage.getItem('wegoliveToday.login.remember') === 'true' ||
+        localStorage.getItem('wegolive.login.remember') === 'true';
+
+      const saved =
+        localStorage.getItem('wegoliveToday.login.identifier') ||
+        localStorage.getItem('wegoliveToday.login.email') || // old key
+        localStorage.getItem('wegolive.login.email') ||
+        '';
+
       setRemember(remembered || saved.length > 0);
-      if (saved) setEmailOrUsername(saved);
+      if (saved) setIdentifier(saved);
     } catch {
       /* no-op */
     }
   }, []);
 
-  // Persist remember choice + email/username
   useEffect(() => {
     try {
       localStorage.setItem('wegoliveToday.login.remember', String(remember));
-      if (remember) localStorage.setItem('wegoliveToday.login.email', emailOrUsername);
-      else localStorage.removeItem('wegoliveToday.login.email');
+      if (remember) localStorage.setItem('wegoliveToday.login.identifier', identifier);
+      else localStorage.removeItem('wegoliveToday.login.identifier');
     } catch {
       /* no-op */
     }
-  }, [remember, emailOrUsername]);
+  }, [remember, identifier]);
 
-  // Decide if Face ID tab should show (mobile + passkeys supported)
+  /* ───────────── Capability gating: mobile + passkeys ───────────── */
   useEffect(() => {
     let alive = true;
 
     async function init() {
-      const mobile = isMobileDevice();
-      const ok = mobile && (await supportsPasskeys());
-
+      const ok = isMobileDevice() && (await supportsPasskeys());
       if (!alive) return;
+
       setCanFaceId(ok);
-      setMode(ok ? 'face' : 'password');
+      setMode((prev) => {
+        // Only auto-switch if user hasn't explicitly chosen password previously
+        if (!ok) return 'password';
+        return prev === 'password' ? 'face' : prev;
+      });
     }
 
     init();
-
-    const onResize = () => {
-      // Keep it stable on rotation
-      init();
-    };
-
+    const onResize = () => init();
     window.addEventListener('resize', onResize);
     return () => {
       alive = false;
@@ -133,11 +177,7 @@ export default function LoginForm({ nextUrl }: { nextUrl?: string }) {
     };
   }, []);
 
-  /**
-   * PASSWORD LOGIN (existing Supabase flow)
-   * If you truly mean "username" instead of email, you’ll need a lookup:
-   * username -> email (or a custom auth flow). For now we keep it as email.
-   */
+  /* ───────────── Password login ───────────── */
   async function onSubmitPassword(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (loadingPw || loadingFace) return;
@@ -145,9 +185,9 @@ export default function LoginForm({ nextUrl }: { nextUrl?: string }) {
     setError(null);
     setLoadingPw(true);
 
-    const clean = emailOrUsername.trim();
-
     try {
+      const clean = identifier.trim();
+
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: clean,
         password,
@@ -172,59 +212,54 @@ export default function LoginForm({ nextUrl }: { nextUrl?: string }) {
     }
   }
 
-  /**
-   * FACE ID LOGIN (Passkey/WebAuthn)
-   * This expects API endpoints that return WebAuthn options and verify them.
-   *
-   * You’ll implement:
-   *  - POST /api/auth/passkey/login/start
-   *  - POST /api/auth/passkey/login/finish
-   */
+  /* ───────────── Face ID (Passkeys / WebAuthn) login ───────────── */
   const onFaceId = useCallback(async () => {
     if (loadingPw || loadingFace) return;
+
     setError(null);
     setLoadingFace(true);
 
+    // Cancel any prior in-flight prompt
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+
     try {
-      // 1) Ask server for WebAuthn "get" options (challenge, rpId, allowCredentials, etc.)
-      const startRes = await fetch('/api/auth/passkey/login/start', { method: 'POST' });
-      if (!startRes.ok) throw new Error('Face ID login is not available yet.');
-      const start = await startRes.json();
+      // 1) Start auth on server (sets HttpOnly challenge cookie)
+      const startRes = await fetch('/api/auth/passkey/login/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Email hint is optional: helps limit allowCredentials for faster UX.
+        body: JSON.stringify({
+          email: showFaceHint ? faceHintEmail.trim().toLowerCase() : undefined,
+        }),
+      });
 
-      // Expecting base64url strings from server
-      const publicKey: PublicKeyCredentialRequestOptions = {
-        ...start.publicKey,
-        challenge: b64urlToBuf(start.publicKey.challenge),
-        allowCredentials: (start.publicKey.allowCredentials || []).map((c: any) => ({
-          ...c,
-          id: b64urlToBuf(c.id),
-        })),
-      };
+      if (!startRes.ok) {
+        const msg = await startRes.text().catch(() => '');
+        throw new Error(msg || 'Face ID login is not available yet.');
+      }
 
-      // 2) Trigger Face ID (platform authenticator)
+      const startJson = await startRes.json();
+      const optionsJson = startJson?.options ?? startJson?.publicKey ?? null;
+      if (!optionsJson?.challenge) throw new Error('Invalid passkey options from server.');
+
+      // 2) Trigger platform authenticator (Face ID on iOS)
+      const publicKey = normalizeRequestOptions(optionsJson);
+
       const cred = (await navigator.credentials.get({
         publicKey,
+        signal: abortRef.current.signal,
       })) as PublicKeyCredential | null;
 
       if (!cred) throw new Error('Face ID was cancelled.');
 
-      const res = cred.response as AuthenticatorAssertionResponse;
+      // 3) Send assertion to server for verification + session creation
+      const credential = serializeAssertion(cred);
 
-      // 3) Send assertion back to server for verification + session creation
       const finishRes = await fetch('/api/auth/passkey/login/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: cred.id,
-          rawId: bufToB64url(cred.rawId),
-          type: cred.type,
-          response: {
-            clientDataJSON: bufToB64url(res.clientDataJSON),
-            authenticatorData: bufToB64url(res.authenticatorData),
-            signature: bufToB64url(res.signature),
-            userHandle: res.userHandle ? bufToB64url(res.userHandle) : null,
-          },
-        }),
+        body: JSON.stringify({ credential }),
       });
 
       if (!finishRes.ok) {
@@ -233,18 +268,27 @@ export default function LoginForm({ nextUrl }: { nextUrl?: string }) {
       }
 
       const finish = await finishRes.json();
-      // finish should include userId OR redirect destination
-      const destination = nextSafe ?? finish?.destination ?? `/dashboard/${finish?.userId ?? 'guest'}`;
+      const destination =
+        nextSafe ??
+        finish?.redirectTo ??
+        finish?.destination ??
+        (finish?.userId ? `/dashboard/${finish.userId}` : '/dashboard/guest');
 
       router.replace(destination);
       router.refresh();
     } catch (e: any) {
-      setError(e?.message || 'Face ID login failed.');
+      const name = e?.name || '';
+      if (name === 'AbortError') {
+        setError(null);
+      } else {
+        setError(e?.message || 'Face ID login failed.');
+      }
     } finally {
       setLoadingFace(false);
     }
-  }, [loadingPw, loadingFace, nextSafe, router]);
+  }, [faceHintEmail, loadingFace, loadingPw, nextSafe, router, showFaceHint]);
 
+  /* ────────────────────────────── UI ────────────────────────────── */
   return (
     <div className="w-full max-w-md min-w-0">
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 shadow-2xl backdrop-blur min-w-0">
@@ -259,7 +303,7 @@ export default function LoginForm({ nextUrl }: { nextUrl?: string }) {
             <p className="mt-1 text-sm text-zinc-400">Sign in to your creator dashboard</p>
           </div>
 
-          {/* Mobile toggle (Face ID vs Password) */}
+          {/* Mode toggle (mobile + supported) */}
           {canFaceId && (
             <div className="mt-5">
               <div className="grid grid-cols-2 rounded-xl border border-zinc-800 bg-black p-1">
@@ -307,12 +351,37 @@ export default function LoginForm({ nextUrl }: { nextUrl?: string }) {
                     <FiLock />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-medium text-zinc-100">WeGoLiveToday Face ID</div>
+                    <div className="text-sm font-medium text-zinc-100">WeGoLiveToday Face Login</div>
                     <div className="text-xs text-zinc-400 break-words">
-                      Fast sign-in using your device’s secure Face ID unlock (Passkeys).
+                      Uses your phone’s secure biometric unlock via Passkeys (no Apple Developer account required).
                     </div>
                   </div>
                 </div>
+
+                {/* Optional email hint (collapsible) */}
+                <button
+                  type="button"
+                  onClick={() => setShowFaceHint((v) => !v)}
+                  className="mt-3 inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200"
+                >
+                  {showFaceHint ? 'Hide' : 'Optional: use email to find your passkey faster'} <FiChevronRight />
+                </button>
+
+                {showFaceHint && (
+                  <div className="mt-2">
+                    <label className="text-xs text-zinc-400">Email (optional)</label>
+                    <input
+                      value={faceHintEmail}
+                      onChange={(e) => setFaceHintEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      inputMode="email"
+                      className="mt-1 w-full min-w-0 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/25"
+                    />
+                    <div className="mt-1 text-[11px] text-zinc-500">
+                      Leave blank to use “passkey discoverable login” (true Face ID-only flow).
+                    </div>
+                  </div>
+                )}
 
                 <button
                   type="button"
@@ -349,21 +418,24 @@ export default function LoginForm({ nextUrl }: { nextUrl?: string }) {
           {(!canFaceId || mode === 'password') && (
             <form onSubmit={onSubmitPassword} className="mt-5 space-y-4 min-w-0" aria-label="Sign-in form">
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm text-zinc-300">
+                <label htmlFor="identifier" className="text-sm text-zinc-300">
                   Email (or username)
                 </label>
                 <input
-                  id="email"
-                  name="email"
+                  id="identifier"
+                  name="identifier"
                   type="text"
                   autoComplete="email"
                   inputMode="email"
                   required
-                  value={emailOrUsername}
-                  onChange={(e) => setEmailOrUsername(e.target.value)}
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="you@example.com"
                   className="w-full min-w-0 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5 text-zinc-100 placeholder-zinc-500 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/25"
                 />
+                <p className="text-[11px] text-zinc-500">
+                  (Password login expects an email today. Username can be supported later via a lookup.)
+                </p>
               </div>
 
               <div className="space-y-2">
