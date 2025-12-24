@@ -10,6 +10,7 @@ import type { LiveCard } from '@/app/dashboard/page';
 import StreamCard from '@/components/dashboard/StreamCard';
 import CategoryStrip from '@/components/dashboard/CategoryStrip';
 import Controls, { type SortKey } from '@/components/dashboard/Controls';
+import { supabase } from '@/lib/supabase';
 
 const CATEGORIES = ['Featured', 'IRL', 'Coding', 'Music', 'Gaming', 'Art'] as const;
 type Category = (typeof CATEGORIES)[number];
@@ -57,6 +58,32 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
   const [isPending, startTransition] = useTransition();
 
   /* ──────────────────────────────────────────────────────────────────────────
+    Logout
+  ─────────────────────────────────────────────────────────────────────────── */
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
+
+  async function onLogout() {
+    if (loggingOut) return;
+    setLogoutError(null);
+    setLoggingOut(true);
+
+    try {
+      // End Supabase session
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      // Route back to login/page.tsx (Next route: /login)
+      router.replace('/login');
+      router.refresh();
+    } catch (e: any) {
+      setLogoutError(e?.message || 'Failed to log out.');
+    } finally {
+      setLoggingOut(false);
+    }
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────────
     Keep URL params synced (shareable browse state)
   ─────────────────────────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -85,7 +112,7 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
   );
 
   /* ──────────────────────────────────────────────────────────────────────────
-    Filtering + sorting (kept from your original logic)
+    Filtering + sorting
   ─────────────────────────────────────────────────────────────────────────── */
   const filtered = useMemo(() => {
     let items =
@@ -128,16 +155,9 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
 
   /* ──────────────────────────────────────────────────────────────────────────
     “YouTube/Twitch-inspired” structure
-    - Sticky “browse controls” bar (chips + search/sort)
-    - Featured hero area (only when it makes sense)
-    - Clean grid sections below
   ─────────────────────────────────────────────────────────────────────────── */
   const showHero =
-    category === 'Featured' &&
-    !query.trim() &&
-    !sfwOnly &&
-    sort === 'top' &&
-    filtered.length > 0;
+    category === 'Featured' && !query.trim() && !sfwOnly && sort === 'top' && filtered.length > 0;
 
   const hero = showHero ? filtered[0] : null;
   const upNext = showHero ? filtered.slice(1, 5) : [];
@@ -146,13 +166,40 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
   return (
     <div className="w-full min-w-0 space-y-4">
       {/* ────────────────────────────────────────────────────────────────────
-        Sticky “Browse Bar” (YouTube-like)
-        - Keeps category chips + controls always reachable
-        - Mobile safe (no overlap, no absolute positioning)
+        Sticky “Browse Bar”
       ───────────────────────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 -mx-2 sm:-mx-3 lg:mx-0">
         <div className="bg-black/70 backdrop-blur border-b border-zinc-900 px-2 sm:px-3 lg:px-0 py-3">
           <div className="space-y-3">
+            {/* Top row (adds Logout) */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-zinc-200 truncate">Browse</div>
+                <div className="text-xs text-zinc-500 truncate">Find live streams fast</div>
+              </div>
+
+              <button
+                type="button"
+                onClick={onLogout}
+                disabled={loggingOut}
+                className={cx(
+                  'shrink-0 rounded-lg border px-3 py-2 text-sm transition',
+                  'border-zinc-800 bg-zinc-900/40 text-zinc-200 hover:bg-zinc-800/50',
+                  loggingOut && 'opacity-60 cursor-not-allowed',
+                )}
+                aria-label="Log out"
+                title="Log out"
+              >
+                {loggingOut ? 'Logging out…' : 'Log out'}
+              </button>
+            </div>
+
+            {logoutError && (
+              <div className="rounded-lg border border-rose-900/40 bg-rose-950/30 px-3 py-2 text-sm text-rose-200">
+                {logoutError}
+              </div>
+            )}
+
             <CategoryStrip
               categories={[...CATEGORIES]}
               active={category}
@@ -180,7 +227,7 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
               }}
             />
 
-            {/* Active filters row (Twitch-like “state clarity”) */}
+            {/* Active filters row */}
             {hasFilters && (
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-400">
@@ -219,7 +266,7 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
         <BrowseSkeleton />
       ) : filtered.length ? (
         <div className="space-y-5">
-          {/* Featured Hero (Twitch-like) */}
+          {/* Featured Hero */}
           {showHero && hero && (
             <section className="w-full min-w-0 rounded-2xl border border-zinc-800 bg-zinc-950/40 overflow-hidden">
               <div className="px-4 sm:px-5 py-4 border-b border-zinc-800 flex items-center justify-between gap-3">
@@ -267,7 +314,7 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
             </section>
           )}
 
-          {/* Main grid section (YouTube-like clean grid) */}
+          {/* Main grid */}
           <section className="w-full min-w-0">
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div className="min-w-0">
@@ -279,7 +326,6 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
                 </p>
               </div>
 
-              {/* Optional “See more” link placeholder (keep if you wire later) */}
               <Link href={pathname} className="text-sm text-emerald-400 hover:text-emerald-300">
                 Refresh
               </Link>
@@ -405,9 +451,7 @@ function EmptyState() {
     <div className="grid place-items-center rounded-2xl border border-zinc-800 bg-zinc-950/40 py-16 text-center">
       <div className="space-y-2 max-w-md px-6">
         <p className="text-white font-medium">No results</p>
-        <p className="text-sm text-zinc-400">
-          Try a different category, search term, or remove filters.
-        </p>
+        <p className="text-sm text-zinc-400">Try a different category, search term, or remove filters.</p>
       </div>
     </div>
   );
