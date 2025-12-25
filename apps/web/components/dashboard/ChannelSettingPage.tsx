@@ -424,7 +424,7 @@ export default function ChannelSettingsPage() {
             <div className="mt-4">
               <div className="text-sm text-zinc-400 mb-2">Content labels</div>
               <div className="flex flex-wrap gap-2">
-                {(['mild-language','mature','games','irl','music','sports'] as ContentLabel[]).map(lbl => {
+                {(['mild-language','mature','games','irl','music','sports'] as const).map((lbl: ContentLabel) => {
                   const active = settings.defaults.labels.includes(lbl);
                   return (
                     <button

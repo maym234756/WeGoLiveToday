@@ -957,88 +957,102 @@ export default function RevenuePage() {
         right={<Chip tone="zinc">{filtered.length} results</Chip>}
       >
         <div className="overflow-x-auto">
-          <table className="min-w-[860px] w-full border-separate border-spacing-0">
-            <thead>
-              <tr className="text-left text-xs text-zinc-400">
-                <th className="sticky left-0 z-[1] bg-zinc-900 px-3 py-2">When</th>
-                <th className="px-3 py-2">Type</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Viewer / Source</th>
-                <th className="px-3 py-2">Notes</th>
-                <th className="px-3 py-2 text-right">Gross</th>
-                <th className="px-3 py-2 text-right">Fees</th>
-                <th className="px-3 py-2 text-right">Net</th>
-                <th className="px-3 py-2">Risk</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length ? (
-                filtered.map((e) => {
-                  const s = statusChip(e.status);
-                  const r = riskChip(e.risk);
-                  return (
-                    <tr key={e.id} className="text-sm text-zinc-200">
-                      <td className="sticky left-0 z-[1] border-t border-zinc-800 bg-zinc-950 px-3 py-3 align-top">
-                        <div className="text-zinc-200">{formatDate(e.at)}</div>
-                        <div className="text-xs text-zinc-500">{formatTime(e.at)}</div>
-                      </td>
-
-                      <td className="border-t border-zinc-800 px-3 py-3 align-top">
-                        <div className="font-medium">{typeLabel(e.type)}</div>
-                        <div className="text-xs text-zinc-500">{e.title}</div>
-                      </td>
-
-                      <td className="border-t border-zinc-800 px-3 py-3 align-top">
-                        <Chip tone={s.tone}>{s.text}</Chip>
-                      </td>
-
-                      <td className="border-t border-zinc-800 px-3 py-3 align-top">
-                        {e.viewer ? (
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-medium">{e.viewer.displayName}</span>
-                              <span className="text-xs text-zinc-500">{e.viewer.handle}</span>
-                              {e.viewer.vip && <Chip tone="sky">VIP</Chip>}
-                            </div>
-                            <div className="text-xs text-zinc-500">
-                              {e.source ?? '—'}
-                              {e.viewer.country ? ` • ${e.viewer.country}` : ''}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-sm text-zinc-400">{e.source ?? '—'}</div>
-                        )}
-                      </td>
-
-                      <td className="border-t border-zinc-800 px-3 py-3 align-top">
-                        <div className="text-zinc-300">{e.notes ?? '—'}</div>
-                      </td>
-
-                      <td className="border-t border-zinc-800 px-3 py-3 text-right align-top tabular-nums">
-                        {formatMoney(e.amount.gross)}
-                      </td>
-                      <td className="border-t border-zinc-800 px-3 py-3 text-right align-top tabular-nums text-zinc-400">
-                        {formatMoney(e.amount.fees)}
-                      </td>
-                      <td className="border-t border-zinc-800 px-3 py-3 text-right align-top tabular-nums">
-                        <span className={e.amount.net >= 0 ? 'text-emerald-300' : 'text-rose-300'}>{formatMoney(e.amount.net)}</span>
-                      </td>
-
-                      <td className="border-t border-zinc-800 px-3 py-3 align-top">
-                        <Chip tone={r.tone} title="Risk is a policy output (mock).">{r.text}</Chip>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={9} className="border-t border-zinc-800 px-3 py-10 text-center text-sm text-zinc-400">
-                    No transactions match your filters.
-                  </td>
+          {/* desktop / tablet: keep original table */}
+          <div className="hidden md:block">
+            <table className="min-w-[860px] w-full border-separate border-spacing-0">
+              <thead>
+                <tr className="text-left text-xs text-zinc-400">
+                  <th className="sticky left-0 z-[1] bg-zinc-900 px-3 py-2">When</th>
+                  <th className="px-3 py-2">Type</th>
+                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2">Viewer / Source</th>
+                  <th className="px-3 py-2">Notes</th>
+                  <th className="px-3 py-2 text-right">Gross</th>
+                  <th className="px-3 py-2 text-right">Fees</th>
+                  <th className="px-3 py-2 text-right">Net</th>
+                  <th className="px-3 py-2">Risk</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.length ? (
+                  filtered.map((e) => {
+                    const s = statusChip(e.status);
+                    const r = riskChip(e.risk);
+                    return (
+                      <tr key={e.id} className="text-sm text-zinc-200">
+                        <td className="sticky left-0 z-[1] border-t border-zinc-800 bg-zinc-950 px-3 py-3 align-top">
+                          <div className="text-zinc-200">{formatDate(e.at)}</div>
+                          <div className="text-xs text-zinc-500">{formatTime(e.at)}</div>
+                        </td>
+
+                        <td className="border-t border-zinc-800 px-3 py-3 align-top">
+                          <div className="font-medium">{typeLabel(e.type)}</div>
+                          <div className="text-xs text-zinc-500">{e.title}</div>
+                        </td>
+
+                        <td className="border-t border-zinc-800 px-3 py-3 align-top">
+                          <Chip tone={s.tone}>{s.text}</Chip>
+                        </td>
+
+                        <td className="border-t border-zinc-800 px-3 py-3 align-top">
+                          {e.viewer ? (
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium">{e.viewer.displayName}</span>
+                                <span className="text-xs text-zinc-500">{e.viewer.handle}</span>
+                                {e.viewer.vip && <Chip tone="sky">VIP</Chip>}
+                              </div>
+                              <div className="text-xs text-zinc-500">
+                                {e.source ?? '—'}
+                                {e.viewer.country ? ` • ${e.viewer.country}` : ''}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-sm text-zinc-400">{e.source ?? '—'}</div>
+                          )}
+                        </td>
+
+                        <td className="border-t border-zinc-800 px-3 py-3 align-top">
+                          <div className="text-zinc-300">{e.notes ?? '—'}</div>
+                        </td>
+
+                        <td className="border-t border-zinc-800 px-3 py-3 text-right align-top tabular-nums">
+                          {formatMoney(e.amount.gross)}
+                        </td>
+                        <td className="border-t border-zinc-800 px-3 py-3 text-right align-top tabular-nums text-zinc-400">
+                          {formatMoney(e.amount.fees)}
+                        </td>
+                        <td className="border-t border-zinc-800 px-3 py-3 text-right align-top tabular-nums">
+                          <span className={e.amount.net >= 0 ? 'text-emerald-300' : 'text-rose-300'}>{formatMoney(e.amount.net)}</span>
+                        </td>
+
+                        <td className="border-t border-zinc-800 px-3 py-3 align-top">
+                          <Chip tone={r.tone} title="Risk is a policy output (mock).">{r.text}</Chip>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={9} className="border-t border-zinc-800 px-3 py-10 text-center text-sm text-zinc-400">
+                      No transactions match your filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* mobile: stacked cards */}
+          <div className="md:hidden space-y-3">
+            {filtered.length ? (
+              filtered.map((e) => <TransactionMobileItem key={e.id} e={e} />)
+            ) : (
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 text-center text-sm text-zinc-400">
+                No transactions match your filters.
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer actions */}
@@ -1056,6 +1070,37 @@ export default function RevenuePage() {
           </div>
         </div>
       </Card>
+    </div>
+  );
+}
+
+// add: mobile transaction item (place above the `return` in the file)
+function TransactionMobileItem({ e }: { e: RevenueEvent }) {
+  const s = statusChip(e.status);
+  const r = riskChip(e.risk);
+  return (
+    <div className="md:hidden rounded-lg border border-zinc-800 bg-zinc-950 p-3 space-y-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="font-medium text-zinc-200">{typeLabel(e.type)}</div>
+          <div className="text-xs text-zinc-500 truncate">{e.title}</div>
+          <div className="text-xs text-zinc-400 mt-1">{e.viewer ? `${e.viewer.displayName} ${e.viewer.handle ? `(${e.viewer.handle})` : ''}` : e.source ?? '—'}</div>
+        </div>
+        <div className="text-right tabular-nums">
+          <div className={e.amount.net >= 0 ? 'text-emerald-300 font-semibold' : 'text-rose-300 font-semibold'}>{formatMoney(e.amount.net)}</div>
+          <div className="text-xs text-zinc-400">{formatMoney(e.amount.gross)} • {formatMoney(e.amount.fees)}</div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between text-xs text-zinc-500">
+        <div>{formatDate(e.at)} • {formatTime(e.at)}</div>
+        <div className="flex items-center gap-2">
+          <Chip tone={s.tone}>{s.text}</Chip>
+          <Chip tone={r.tone}>{r.text}</Chip>
+        </div>
+      </div>
+
+      <div className="text-sm text-zinc-300">{e.notes ?? '—'}</div>
     </div>
   );
 }

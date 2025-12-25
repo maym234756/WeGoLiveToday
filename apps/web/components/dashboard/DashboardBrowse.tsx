@@ -121,7 +121,7 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
         : safeInitialStreams.filter((s) => s.tag === category);
 
     if (sfwOnly) {
-      items = items.filter((s) => ['IRL', 'Art', 'Coding', 'Music', 'Gaming', 'Featured'].includes(s.tag));
+      items = items.filter((s) => ['IRL', 'Art', 'Coding', 'Music', 'Gaming', 'Featured', 'Podcast', ''].includes(s.tag));
     }
 
     const trimmed = query.trim();
