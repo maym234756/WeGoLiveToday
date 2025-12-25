@@ -9,8 +9,8 @@ export default function SavedViews() {
   const sp = useSearchParams()
   const [views, setViews] = useState<View[]>([])
   const [name, setName] = useState('')
-
-  const url = `${path}?${sp.toString()}`
+  const spString = sp?.toString() ?? ''
+  const url = spString ? `${path}?${spString}` : path
   useEffect(() => {
     const key = `views:${path}`
     const raw = localStorage.getItem(key)
