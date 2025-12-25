@@ -14,7 +14,7 @@ const nav = [
 export default function Header() {
   const pathname = usePathname()
   const hideOn = ['/login', '/signup'] // hide header on auth pages
-  if (hideOn.includes(pathname)) return null
+  if (!pathname || hideOn.includes(pathname)) return null
 
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/70 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/60">
