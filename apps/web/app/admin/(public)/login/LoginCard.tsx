@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 export default function LoginCard() {
   const router = useRouter()
   const sp = useSearchParams()
-  const next = sp.get('next') || '/admin/(protected)/'
+  const next = sp?.get('next') ?? '/admin/(protected)/'
 
   const [pw, setPw] = React.useState('')
   const [show, setShow] = React.useState(false)
