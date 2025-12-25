@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 export default function Footer() {
   const pathname = usePathname()
   const hideOn = ['/login', '/signup']
-  if (hideOn.includes(pathname)) return null
+  if (!pathname || hideOn.includes(pathname)) return null
 
   return (
     <footer className="border-t border-zinc-800/60">
