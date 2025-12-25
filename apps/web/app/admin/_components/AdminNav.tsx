@@ -15,6 +15,8 @@ const items = [
 
 export default function AdminNav() {
   const pathname = usePathname()
+  const pathnameSafe = pathname ?? ''
+
   return (
     <nav className="h-full w-64 shrink-0 border-r border-zinc-800 bg-zinc-950/80">
       <div className="px-4 pb-4 pt-5">
@@ -26,7 +28,7 @@ export default function AdminNav() {
 
       <ul className="space-y-1 px-2 pb-4">
         {items.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || (href !== '/admin' && pathname.startsWith(href))
+          const active = pathnameSafe === href || (href !== '/admin' && pathnameSafe.startsWith(href))
           return (
             <li key={href}>
               <Link
