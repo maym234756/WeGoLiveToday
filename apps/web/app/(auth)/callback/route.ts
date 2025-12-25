@@ -1,14 +1,13 @@
-import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'; // Adjust the path as necessary
+import { NextResponse } from 'next/server';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
 
-  const cookieStore = await cookies(); // async in Next 16
   const supabase = createRouteHandlerClient({
-    cookies: async () => cookieStore,
+    cookies,
   });
 
   if (code) {
