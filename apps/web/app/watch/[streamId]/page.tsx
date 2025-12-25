@@ -5,7 +5,9 @@ import { useParams } from 'next/navigation';
 import ChatInput from '@/components/ChatInput';
 
 export default function StreamViewerPage() {
-  const { streamId } = useParams();
+  const params = useParams();
+  const streamId = Array.isArray(params?.streamId) ? params?.streamId[0] : params?.streamId ?? '';
+  if (!streamId) return <div>Stream not found</div>;
 
   const isPro = true; // 🔓 Replace with actual user data in real use
 
