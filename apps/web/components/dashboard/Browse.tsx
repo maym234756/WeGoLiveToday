@@ -19,10 +19,10 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
   const pathname = usePathname();
   const sp = useSearchParams();
 
-  const initialCat = (sp.get('cat') as Category) || 'Featured';
-  const initialQuery = sp.get('q') ?? '';
-  const initialSort = (sp.get('sort') as SortKey) || 'top';
-  const initialSfw = sp.get('sfw') === '1';
+  const initialCat = (sp?.get('cat') as Category) || 'Featured';
+  const initialQuery = sp?.get('q') ?? '';
+  const initialSort = (sp?.get('sort') as SortKey) || 'top';
+  const initialSfw = sp?.get('sfw') === '1';
 
   const [category, setCategory] = useState<Category>(initialCat);
   const [query, setQuery] = useState(initialQuery);
@@ -32,14 +32,14 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    const params = new URLSearchParams(sp.toString());
+    const params = new URLSearchParams(sp?.toString() ?? '');
     params.set('cat', category);
     params.set('sort', sort);
     sfwOnly ? params.set('sfw', '1') : params.delete('sfw');
     query ? params.set('q', query) : params.delete('q');
 
     const next = `${pathname}?${params.toString()}`;
-    const current = `${pathname}?${sp.toString()}`;
+    const current = `${pathname}?${sp?.toString() ?? ''}`;
     if (next !== current) {
       startTransition(() => router.replace(next, { scroll: false }));
     }
