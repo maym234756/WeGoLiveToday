@@ -17,6 +17,7 @@ import {
   FiShield,
   FiTrendingUp,
 } from 'react-icons/fi';
+import BankSetup from './BankSetup';
 
 type Money = {
   gross: number; // before fees/refunds
@@ -894,9 +895,7 @@ export default function RevenuePage() {
               </div>
               <div className="mt-1 text-xs text-zinc-400">Bank • Instant payouts disabled (recommended for fewer disputes)</div>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Pill tone="zinc" icon={<FiCreditCard />} onClick={() => pushToast('Open payout settings (mock)')}>
-                  Manage method
-                </Pill>
+                <BankSetup pushToast={pushToast} />
                 <Pill tone="zinc" icon={<FiShield />} onClick={() => pushToast('Risk rules updated (mock)')}>
                   Risk rules
                 </Pill>
