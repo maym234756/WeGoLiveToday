@@ -29,7 +29,7 @@ function DashboardContent() {
 
   useEffect(() => {
     const handleRedirect = async () => {
-      const isGuest = searchParams.get('guest') === 'true';
+      const isGuest = searchParams?.get('guest') === 'true';
 
       // Allow guests to stay on the generic dashboard
       if (isGuest) return;
@@ -47,7 +47,7 @@ function DashboardContent() {
     };
 
     handleRedirect();
-  }, [router, searchParams]);
+  }, [searchParams]);
 
   return (
     <main className="px-4 py-8 sm:px-6 lg:px-8">
