@@ -6,27 +6,28 @@ type View = { name: string; url: string }
 
 export default function SavedViews() {
   const path = usePathname()
+  const pathSafe = path ?? '/'   // ensure non-null path for keys/urls
   const sp = useSearchParams()
   const [views, setViews] = useState<View[]>([])
   const [name, setName] = useState('')
   const spString = sp?.toString() ?? ''
-  const url = spString ? `${path}?${spString}` : path
+  const url = spString ? `${pathSafe}?${spString}` : pathSafe
   useEffect(() => {
-    const key = `views:${path}`
+    const key = `views:${pathSafe}`
     const raw = localStorage.getItem(key)
-    setViews(raw ? JSON.parse(raw) : [])
+    setViews(raw ? (JSON.parse(raw) as View[]) : [])
   }, [path])
 
   const add = () => {
     if (!name.trim()) return
-    const key = `views:${path}`
+    const key = `views:${pathSafe}`
     const next = [...views, { name: name.trim(), url }]
     setViews(next)
     localStorage.setItem(key, JSON.stringify(next))
     setName('')
   }
   const remove = (i: number) => {
-    const key = `views:${path}`
+    const key = `views:${pathSafe}`
     const next = views.slice(); next.splice(i,1)
     setViews(next)
     localStorage.setItem(key, JSON.stringify(next))
