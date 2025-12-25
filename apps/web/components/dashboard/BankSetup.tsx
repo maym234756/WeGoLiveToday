@@ -69,7 +69,7 @@ export default function BankSetup({ pushToast }: { pushToast: (m: string) => voi
   const { open: openPlaid, ready } = usePlaidLink({
     token: linkToken ?? '',
     onSuccess,
-    onExit: (err, metadata) => {
+    onExit: (err: any, metadata: any) => {
       setOpen(false);
       // clear token on exit to reduce sensitive data lifetime
       setLinkToken(null);
