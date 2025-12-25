@@ -6,9 +6,9 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
 
-  const cookieStore = cookies();               // sync store
+  const cookieStore = await cookies(); // async in Next 16
   const supabase = createRouteHandlerClient({
-    cookies: () => cookieStore,                // returns ReadonlyRequestCookies, not a Promise
+    cookies: async () => cookieStore,
   });
 
   if (code) {
