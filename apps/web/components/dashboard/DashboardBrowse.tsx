@@ -45,10 +45,10 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
   /* ──────────────────────────────────────────────────────────────────────────
     State derived from URL
   ─────────────────────────────────────────────────────────────────────────── */
-  const initialCat = (sp.get('cat') as Category) || 'Featured';
-  const initialQuery = sp.get('q') ?? '';
-  const initialSort = (sp.get('sort') as SortKey) || 'top';
-  const initialSfw = sp.get('sfw') === '1';
+  const initialCat = (sp?.get('cat') as Category) || 'Featured';
+  const initialQuery = sp?.get('q') ?? '';
+  const initialSort = (sp?.get('sort') as SortKey) || 'top';
+  const initialSfw = sp?.get('sfw') === '1';
 
   const [category, setCategory] = useState<Category>(initialCat);
   const [query, setQuery] = useState(initialQuery);
@@ -87,7 +87,7 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
     Keep URL params synced (shareable browse state)
   ─────────────────────────────────────────────────────────────────────────── */
   useEffect(() => {
-    const params = new URLSearchParams(sp.toString());
+    const params = new URLSearchParams(sp?.toString() ?? '');
     params.set('cat', category);
     params.set('sort', sort);
 
@@ -95,7 +95,7 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
     query ? params.set('q', query) : params.delete('q');
 
     const next = `${pathname}?${params.toString()}`;
-    const current = `${pathname}?${sp.toString()}`;
+    const current = `${pathname}?${sp?.toString() ?? ''}`;
 
     if (next !== current) {
       startTransition(() => router.replace(next, { scroll: false }));
@@ -326,9 +326,9 @@ export default function DashboardBrowse({ initialStreams }: DashboardBrowseProps
                 </p>
               </div>
 
-              <Link href={pathname} className="text-sm text-emerald-400 hover:text-emerald-300">
-                Refresh
-              </Link>
+              <Link href={pathname || '/'} className="text-sm text-emerald-400 hover:text-emerald-300">
+                  Refresh
+                </Link>
             </div>
 
             <div className="mt-3 grid min-w-0 gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
