@@ -4,7 +4,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@supabase/supabase-js';
 import {
   FiArrowRight,
   FiCheckCircle,
@@ -50,7 +50,10 @@ function formatSupabaseError(err: any) {
 
 export default function SignupForm() {
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+  );
 
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');

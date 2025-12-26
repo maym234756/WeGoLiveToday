@@ -1,13 +1,10 @@
-// apps/web/middleware.ts
-
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { createMiddlewareClient } from '@supabase/ssr' // ✅ use this package
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
 
-  // ✅ No need for type overrides
   const supabase = createMiddlewareClient({ req, res })
 
   const {

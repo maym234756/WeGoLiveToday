@@ -5,7 +5,11 @@ export const dynamic = 'force-dynamic';
 
 
 import { useEffect, useMemo, useState } from 'react'
-import clsx from 'clsx'
+
+// Local utility to replace clsx
+function cx(...classes: Array<string | false | undefined | null>) {
+  return classes.filter(Boolean).join(' ');
+}
 
 /**
  * Simple creator studio dashboard with a customizable layout.
@@ -122,7 +126,7 @@ export default function StudioDashboardPage() {
           <button
             type="button"
             onClick={() => setEdit((e) => !e)}
-            className={clsx(
+            className={cx(
               'rounded-md border px-3 py-2 text-sm',
               edit
                 ? 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-500'
@@ -193,7 +197,7 @@ function WidgetShell(props: {
             <button
               type="button"
               disabled={locked}
-              className={clsx(
+              className={cx(
                 'rounded-md border px-2 py-1 text-xs',
                 locked
                   ? 'cursor-not-allowed border-zinc-800 bg-zinc-800 text-zinc-400'
@@ -618,7 +622,7 @@ function Labeled({
           readOnly={readonly}
           defaultValue={value}
           placeholder={placeholder}
-          className={clsx(
+          className={cx(
             'w-full rounded-md border px-3 py-2 outline-none',
             'border-zinc-800 bg-zinc-900 text-zinc-200',
             'focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30'
@@ -667,7 +671,7 @@ function Goal({
         </span>
       </div>
       <div className="h-2 w-full rounded bg-zinc-800">
-        <div className={clsx('h-2 rounded', colorBar)} style={{ width: `${pct}%` }} />
+        <div className={cx('h-2 rounded', colorBar)} style={{ width: `${pct}%` }} />
       </div>
     </div>
   )
