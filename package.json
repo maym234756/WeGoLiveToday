@@ -1,29 +1,32 @@
-{
-  "name": "wegolivetoday",
-  "private": true,
-  "version": "0.0.0",
-  "engines": {
-    "node": ">=20 <21"
-  },
-  "packageManager": "pnpm@10.26.0",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
-  "devDependencies": {
-    "@types/node": "^20.19.27",
-    "@types/react": "^19.2.7",
-    "@types/react-dom": "^19.2.3",
-    "concurrently": "^9.2.1",
-    "prisma": "6.19.0",
-    "typescript": "^5.9.3",
-    "wait-on": "^9.0.3"
-  },
-  "dependencies": {
-    "@prisma/client": "6.19.0",
-    "next": "^16.1.1",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3"
-  }
+﻿{
+    "name":  "wegolivetoday",
+    "private":  true,
+    "version":  "0.0.0",
+    "engines":  {
+                    "node":  "\u003e=20 \u003c21"
+                },
+    "packageManager":  "pnpm@10.26.0",
+    "scripts":  {
+                    "dev":  "next dev",
+                    "build":  "next build",
+                    "start":  "next start"
+                },
+    "devDependencies":  {
+                            "@types/node":  "^20",
+                            "@types/react":  "^19",
+                            "@types/react-dom":  "^19",
+                            "concurrently":  "^9.2.1",
+                            "prisma":  "6.19.0",
+                            "typescript":  "^5.9.3",
+                            "wait-on":  "^9.0.3"
+                        },
+    "dependencies":  {
+                         "@prisma/client":  "6.19.0",
+                         "next":  "^16.1.1",
+                         "react":  "^19.2.3",
+                         "react-dom":  "^19.2.3"
+                     },
+    "pnpm":  {
+
+             }
 }

@@ -22,13 +22,13 @@ importers:
         version: 19.2.3(react@19.2.3)
     devDependencies:
       '@types/node':
-        specifier: ^20.19.27
+        specifier: ^20
         version: 20.19.27
       '@types/react':
-        specifier: ^19.2.7
+        specifier: ^19
         version: 19.2.7
       '@types/react-dom':
-        specifier: ^19.2.3
+        specifier: ^19
         version: 19.2.3(@types/react@19.2.7)
       concurrently:
         specifier: ^9.2.1
