@@ -1,4 +1,0 @@
-packages:
-  - "apps/*"
-  - "live-platform"
-  - "services/**"

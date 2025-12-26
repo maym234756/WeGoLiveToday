@@ -1,7 +1,0 @@
-export default function Head() {
-  return (
-    <>
-      <title>Purchase Tokens · WeGoLive</title>
-    </>
-  );
-}
